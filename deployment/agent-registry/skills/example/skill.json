@@ -1,0 +1,5 @@
+{
+  "displayName": "Example Skill",
+  "description": "A reusable standalone skill discoverable in Agent Registry.",
+  "tags": ["example"]
+}

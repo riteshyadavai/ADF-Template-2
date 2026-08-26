@@ -1,0 +1,25 @@
+replicaCount: 2
+
+image:
+  repository: multi-agent-factory
+  tag: latest
+  pullPolicy: IfNotPresent
+
+service:
+  type: ClusterIP
+  port: 8000
+
+resources:
+  requests:
+    cpu: 250m
+    memory: 512Mi
+  limits:
+    cpu: "1"
+    memory: 1Gi
+
+env:
+  APP_ENV: dev
+  OBS_PROMETHEUS_ENABLED: "true"
+
+ingress:
+  enabled: false

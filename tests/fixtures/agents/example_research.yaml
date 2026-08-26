@@ -1,0 +1,17 @@
+name: example_research
+version: "1.0.0"
+description: Example research sub-agent for document lookup and summarization.
+inputs:
+  - query
+  - session_id
+outputs:
+  - summary
+  - citations
+side_effects: []
+allowed_tools:
+  - vector_search
+  - web_search
+cost_ceiling_usd: 0.50
+timeout_seconds: 60
+eval_suite: example_research_v1
+prompt_version: "1.0.0"

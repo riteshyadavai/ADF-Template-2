@@ -1,0 +1,35 @@
+"""Redis cache — Upstash/local compatible."""
+
+from __future__ import annotations
+
+import json
+from typing import Any
+
+from factories.cache.protocol import CacheProvider
+
+
+class RedisCacheProvider(CacheProvider):
+    def __init__(self, url: str) -> None:
+        import redis.asyncio as redis
+
+        self._client = redis.from_url(url, decode_responses=True)
+
+    async def get(self, key: str) -> Any | None:
+        raw = await self._client.get(key)
+        return json.loads(raw) if raw else None
+
+    async def set(self, key: str, value: Any, ttl_seconds: int | None = None) -> None:
+        payload = json.dumps(value)
+        if ttl_seconds:
+            await self._client.setex(key, ttl_seconds, payload)
+        else:
+            await self._client.set(key, payload)
+
+    async def delete(self, key: str) -> None:
+        await self._client.delete(key)
+
+    async def invalidate(self, prefix: str) -> int:
+        keys = [k async for k in self._client.scan_iter(f"{prefix}*")]
+        if keys:
+            await self._client.delete(*keys)
+        return len(keys)

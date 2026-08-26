@@ -1,0 +1,14 @@
+{
+  "tools": [
+    {
+      "name": "run_soql_query",
+      "description": "Run a SOQL query and return matching records.",
+      "annotations": { "readOnlyHint": true }
+    },
+    {
+      "name": "create_record",
+      "description": "Create a Salesforce record for a given SObject type.",
+      "annotations": { "destructiveHint": false }
+    }
+  ]
+}

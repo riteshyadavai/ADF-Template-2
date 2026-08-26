@@ -1,0 +1,5 @@
+# Environment overlay pointer. Actual values live in config/environments/.
+
+name: local
+hot_state: sqlite+aiosqlite:///./data/hot_state.db
+cold_state: sqlite+aiosqlite:///./data/cold_state.db

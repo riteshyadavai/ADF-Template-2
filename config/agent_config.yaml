@@ -1,0 +1,4 @@
+# Agent capability defaults. Override with env vars or manifests at runtime.
+
+default_timeout_seconds: 120
+default_cost_ceiling_usd: 1.0

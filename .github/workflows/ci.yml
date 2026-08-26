@@ -1,0 +1,55 @@
+name: CI
+
+on:
+  push:
+    branches: [main, feature/**]
+  pull_request:
+    branches: [main]
+
+jobs:
+  quality:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: uv sync --all-groups
+
+      - name: Lint
+        run: uv run ruff check app agents shared factories config tests examples
+
+      - name: Type check
+        run: uv run mypy app agents shared factories config --ignore-missing-imports
+
+      - name: Contract tests
+        run: uv run pytest tests/contract tests/mcp tests/unit -m "not integration"
+
+      - name: Integration tests
+        run: uv run pytest tests/integration
+
+      - name: Eval regression gate
+        run: uv run pytest tests/evaluation
+
+      - name: Export OpenAPI schema
+        run: |
+          uv run python -c "from app.main import export_openapi; export_openapi()"
+
+      - name: Upload OpenAPI artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: openapi-schema
+          path: dist/openapi.json
+
+  build:
+    runs-on: ubuntu-latest
+    needs: quality
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build Docker image
+        run: docker build -t multi-agent-factory:${{ github.sha }} .

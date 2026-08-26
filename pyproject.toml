@@ -1,0 +1,99 @@
+[project]
+name = "multi-agent-factory"
+version = "0.2.0"
+description = "Production-ready reusable multi-agent project factory with shared infrastructure, security, and observability."
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "fastapi>=0.115.0",
+    "uvicorn[standard]>=0.32.0",
+    "pydantic>=2.10.0",
+    "pydantic-settings>=2.6.0",
+    "structlog>=24.4.0",
+    "python-dotenv>=1.0.0",
+    "httpx>=0.28.0",
+    "pyyaml>=6.0.2",
+    "google-adk>=2.0.0",
+    "mcp>=1.24,<2",
+    "litellm>=1.83.0",
+    "opentelemetry-api>=1.29.0",
+    "opentelemetry-sdk>=1.29.0",
+    "opentelemetry-instrumentation-fastapi>=0.50b0",
+    "prometheus-client>=0.21.0",
+    "redis>=5.2.0",
+    "sqlalchemy[asyncio]>=2.0.36",
+    "aiosqlite>=0.20.0",
+    "tenacity>=9.0.0",
+    "semver>=3.0.0",
+    "langgraph>=0.2.0",
+    "a2a-sdk[http-server]>=1.1.2",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.3.0",
+    "pytest-asyncio>=0.24.0",
+    "pytest-cov>=6.0.0",
+    "ruff>=0.8.0",
+    "mypy>=1.13.0",
+    "httpx>=0.28.0",
+]
+eval = [
+    "deepeval>=1.5.0",
+    "ragas>=0.2.0",
+]
+observability = [
+    "logfire>=3.0.0",
+    "langfuse>=2.57.0",
+]
+
+[project.scripts]
+factory = "app.main:cli"
+
+[project.optional-dependencies]
+aws = [
+    "boto3>=1.43.80",
+]
+documents = [
+    "docling>=2.122.0",
+]
+opensearch = [
+    "opensearch-py[async]>=3.2.0",
+]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+pythonpath = ["."]
+testpaths = ["tests", "evals"]
+markers = [
+    "integration: integration tests requiring external services",
+    "contract: agent manifest and schema contract tests",
+    "eval: evaluation regression tests",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["agents", "app", "config", "factories", "shared"]
+
+[tool.mypy]
+python_version = "3.11"
+mypy_path = "."
+strict = false
+ignore_missing_imports = true
+follow_imports = "skip"
+
+[tool.uv]
+package = true
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["agents", "app", "shared", "factories", "config"]

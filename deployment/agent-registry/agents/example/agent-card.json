@@ -1,0 +1,10 @@
+{
+  "name": "Example Agent",
+  "description": "An example agent exposed over the A2A protocol.",
+  "url": "https://example.com/a2a",
+  "version": "1.0.0",
+  "capabilities": {},
+  "defaultInputModes": ["text"],
+  "defaultOutputModes": ["text"],
+  "skills": []
+}

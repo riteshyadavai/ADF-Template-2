@@ -1,0 +1,12 @@
+debug: false
+observability:
+  log_level: INFO
+  prometheus_enabled: true
+gateway:
+  daily_budget_usd: 500.0
+  monthly_budget_usd: 10000.0
+cache:
+  backend: redis
+security:
+  enable_guardrails: true
+  secrets_backend: vault

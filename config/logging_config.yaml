@@ -1,0 +1,4 @@
+# Logging defaults.
+
+log_level: INFO
+json: true

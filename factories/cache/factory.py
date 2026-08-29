@@ -16,4 +16,9 @@ def make_cache_provider(settings: Settings | None = None) -> CacheProvider:
 
         return RedisCacheProvider(settings.cache.redis_url)
 
+    if backend == "memcached":
+        from factories.cache.memcached.client import MemcachedCacheProvider
+
+        return MemcachedCacheProvider(settings.cache.memcached_url)
+
     return InMemoryCacheProvider()

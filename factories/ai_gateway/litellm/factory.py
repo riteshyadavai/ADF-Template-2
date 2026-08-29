@@ -16,7 +16,9 @@ def make_ai_gateway(settings: Settings) -> LLMGateway:
             monthly_limit_usd=settings.gateway.monthly_budget_usd,
             downgrade_model=settings.gateway.budget_downgrade_model,
         )
-        return AIGateway(budget=budget)
+        from factories.cache.factory import make_cache_provider
+
+        return AIGateway(budget=budget, cache=make_cache_provider(settings))
     if provider == "bedrock":
         # Bedrock uses same gateway with model prefix routing via LiteLLM
         return AIGateway()

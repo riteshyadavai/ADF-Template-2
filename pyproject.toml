@@ -27,6 +27,9 @@ dependencies = [
     "semver>=3.0.0",
     "langgraph>=0.2.0",
     "a2a-sdk[http-server]>=1.1.2",
+    "typer>=0.16.0",
+    "rich>=13.9.0",
+    "questionary>=2.1.0",
 ]
 
 [dependency-groups]
@@ -44,11 +47,12 @@ eval = [
 ]
 observability = [
     "logfire>=3.0.0",
-    "langfuse>=2.57.0",
+    "langfuse>=3.0.0",
 ]
 
 [project.scripts]
-factory = "app.main:cli"
+66degrees-factory = "cli.main:app"
+factory = "cli.main:app"
 
 [project.optional-dependencies]
 aws = [
@@ -59,6 +63,12 @@ documents = [
 ]
 opensearch = [
     "opensearch-py[async]>=3.2.0",
+]
+qdrant = [
+    "qdrant-client>=1.14.0",
+]
+cache-memcached = [
+    "pymemcache>=4.0.0",
 ]
 
 [tool.pytest.ini_options]
@@ -79,7 +89,7 @@ target-version = "py311"
 select = ["E", "F", "I", "UP", "B"]
 
 [tool.ruff.lint.isort]
-known-first-party = ["agents", "app", "config", "factories", "shared"]
+known-first-party = ["agents", "app", "cli", "config", "factories", "shared"]
 
 [tool.mypy]
 python_version = "3.11"
@@ -96,4 +106,20 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
-packages = ["agents", "app", "shared", "factories", "config"]
+packages = ["agents", "app", "shared", "factories", "config", "cli"]
+
+[tool.hatch.build.targets.wheel.force-include]
+"catalogs" = "catalogs"
+"tests" = "tests"
+"evals" = "evals"
+"docs" = "docs"
+"examples" = "examples"
+"deployment" = "deployment"
+"data" = "data"
+"notebooks" = "notebooks"
+"Makefile" = "Makefile"
+"README.md" = "README.md"
+".env.example" = ".env.example"
+"Dockerfile" = "Dockerfile"
+"LICENSE" = "LICENSE"
+"pyproject.toml" = "pyproject.toml"

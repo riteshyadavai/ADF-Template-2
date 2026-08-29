@@ -9,6 +9,8 @@ from agents.security.redaction import redact_text
 from config.settings import get_settings
 from factories.ai_gateway.litellm.budget import BudgetTracker
 from factories.ai_gateway.protocol import LLMGateway, LLMRequest, LLMResponse
+from factories.cache.memory.client import content_addressed_key
+from factories.cache.protocol import CacheProvider
 from factories.observability.langfuse.factory import make_langfuse_tracer
 from shared.logger import get_logger
 from shared.metrics import LLM_COST, LLM_REQUESTS
@@ -19,9 +21,14 @@ log = get_logger(__name__)
 class AIGateway(LLMGateway):
     """LiteLLM implementation of the platform LLM gateway."""
 
-    def __init__(self, budget: BudgetTracker | None = None) -> None:
+    def __init__(
+        self,
+        budget: BudgetTracker | None = None,
+        cache: CacheProvider | None = None,
+    ) -> None:
         settings = get_settings()
         self._settings = settings
+        self._cache = cache
         self._budget = budget or BudgetTracker(
             daily_limit_usd=settings.gateway.daily_budget_usd,
             monthly_limit_usd=settings.gateway.monthly_budget_usd,
@@ -44,6 +51,17 @@ class AIGateway(LLMGateway):
             model = downgrade
 
         messages = [{"role": m.role, "content": m.content} for m in request.messages]
+        cache_key = content_addressed_key(
+            namespace="llm",
+            prompt=str(messages),
+            model=model,
+            params={"temperature": request.temperature, "max_tokens": request.max_tokens},
+            tenant_id=tenant_id,
+        )
+        if self._cache is not None and not request.bypass_cache:
+            cached = await self._cache.get(cache_key)
+            if cached:
+                return LLMResponse.model_validate(cached)
 
         try:
             response = await acompletion(
@@ -78,13 +96,20 @@ class AIGateway(LLMGateway):
                 cost_usd=cost,
             )
 
-            return LLMResponse(
+            response_model = LLMResponse(
                 content=content,
                 model=model,
                 token_usage=usage,
                 cost_usd=cost,
                 raw_metadata={"provider": self._settings.gateway.provider},
             )
+            if self._cache is not None and not request.bypass_cache:
+                await self._cache.set(
+                    cache_key,
+                    response_model.model_dump(),
+                    ttl_seconds=self._settings.cache.default_ttl_seconds,
+                )
+            return response_model
         except Exception as exc:
             LLM_REQUESTS.labels(model=model, status="error").inc()
             log.error("llm_request_failed", model=model, error=str(exc))

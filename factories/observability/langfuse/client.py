@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import importlib
+import os
 from contextlib import contextmanager
 from typing import Any
 
@@ -28,14 +29,17 @@ class LangfuseTracer:
 
         try:
             langfuse_module = importlib.import_module("langfuse")
-            self.client = langfuse_module.Langfuse(
-                public_key=settings.public_key.get_secret_value(),
-                secret_key=settings.secret_key.get_secret_value(),
-                host=settings.host,
-                flush_at=settings.flush_at,
-                flush_interval=settings.flush_interval,
-                debug=settings.debug,
-            )
+            host = os.getenv("LANGFUSE_BASE_URL") or settings.host
+            kwargs = {
+                "public_key": settings.public_key.get_secret_value(),
+                "secret_key": settings.secret_key.get_secret_value(),
+                "host": host,
+                "debug": settings.debug,
+            }
+            try:
+                self.client = langfuse_module.Langfuse(**kwargs)
+            except TypeError:
+                self.client = langfuse_module.get_client()
             log.info("langfuse_initialized", host=settings.host)
         except ModuleNotFoundError:
             log.warning("langfuse_not_installed")

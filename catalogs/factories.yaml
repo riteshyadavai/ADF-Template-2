@@ -1,0 +1,130 @@
+capabilities:
+  - id: gateway
+    prompt: LLM / gateway
+    setting: GATEWAY_PROVIDER
+    backends:
+      - id: litellm
+        status: implemented
+        extra: null
+      - id: openai
+        status: implemented
+        extra: null
+      - id: bedrock
+        status: implemented
+        extra: aws
+      - id: ollama
+        status: implemented
+        extra: null
+      - id: kong
+        status: planned
+        extra: null
+  - id: cache
+    prompt: Cache
+    setting: CACHE_BACKEND
+    backends:
+      - id: memory
+        status: implemented
+      - id: redis
+        status: implemented
+      - id: memcached
+        status: implemented
+        extra: cache-memcached
+  - id: vector
+    prompt: Vector store
+    setting: VECTOR_BACKEND
+    backends:
+      - id: memory
+        status: implemented
+      - id: opensearch
+        status: implemented
+        extra: opensearch
+      - id: qdrant
+        status: implemented
+        extra: qdrant
+      - id: pgvector
+        status: planned
+      - id: weaviate
+        status: planned
+  - id: embeddings
+    prompt: Embeddings
+    setting: EMBEDDINGS_BACKEND
+    backends:
+      - id: litellm
+        status: implemented
+      - id: jina
+        status: implemented
+  - id: parser
+    prompt: Document parser
+    setting: PDF_BACKEND
+    backends:
+      - id: docling
+        status: implemented
+        extra: documents
+  - id: guardrails
+    prompt: Content guardrails
+    setting: SECURITY_CONTENT_GUARDRAIL_BACKEND
+    backends:
+      - id: passthrough
+        status: implemented
+      - id: bedrock
+        status: implemented
+        extra: aws
+  - id: eval
+    prompt: Eval
+    setting: EVAL_BACKEND
+    backends:
+      - id: local
+        status: implemented
+      - id: deepeval
+        status: implemented
+        group: eval
+  - id: state
+    prompt: Hot/cold state
+    setting: DB_BACKEND
+    backends:
+      - id: memory
+        status: implemented
+      - id: sqlite
+        status: implemented
+  - id: secrets
+    prompt: Secrets backend
+    setting: SECURITY_SECRETS_BACKEND
+    backends:
+      - id: env
+        status: implemented
+      - id: vault
+        status: planned
+      - id: aws_secrets_manager
+        status: planned
+      - id: sops
+        status: planned
+  - id: observability
+    prompt: Observability
+    backends:
+      - id: langfuse
+        status: implemented
+        group: observability
+      - id: logfire
+        status: implemented
+        group: observability
+  - id: adk
+    prompt: Google ADK
+    setting: ADK_ENABLED
+    backends:
+      - id: memory
+        status: implemented
+      - id: vertex
+        status: planned
+  - id: a2a
+    prompt: A2A
+    setting: A2A_ENABLED
+    backends:
+      - id: sdk
+        status: implemented
+  - id: mcp
+    prompt: MCP
+    backends:
+      - id: stdio
+        status: implemented
+      - id: http
+        status: implemented

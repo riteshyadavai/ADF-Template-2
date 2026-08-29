@@ -1,0 +1,3 @@
+status: implemented
+extra: qdrant
+env: [VECTOR_BACKEND, VECTOR_QDRANT_URL]

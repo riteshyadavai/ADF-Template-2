@@ -36,6 +36,10 @@ class ADKRunner(ABC):
     ) -> str:
         """Run a single user turn and return the final text response."""
 
+    async def run_turn(self, user_id: str, text: str, *, session_id: str | None = None) -> str:
+        """Convenience alias for a single user turn."""
+        return await self.run_message(user_id, text, session_id=session_id)
+
     @abstractmethod
     def run_message_stream(
         self,

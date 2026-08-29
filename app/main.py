@@ -59,6 +59,22 @@ def create_app() -> FastAPI:
     app.include_router(health.router, prefix=settings.api_prefix, tags=["health"])
     app.include_router(agents.router, prefix=settings.api_prefix, tags=["agents"])
 
+    if settings.a2a.enabled:
+        from factories.a2a.executor import OrchestratorAgentExecutor
+        from factories.a2a.mount import mount_a2a
+
+        platform = get_platform()
+
+        async def _run_query(text: str) -> str:
+            from shared.schemas import AgentRequest
+
+            response = await platform.orchestrator.run(AgentRequest(query=text))
+            return response.output
+
+        bundle = platform.factories.a2a_server(OrchestratorAgentExecutor(_run_query))
+        if bundle is not None:
+            mount_a2a(app, bundle)
+
     if not configure_logfire(settings, app):
         FastAPIInstrumentor.instrument_app(app)
     return app

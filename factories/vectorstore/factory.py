@@ -27,4 +27,12 @@ def make_vector_store(settings: Settings | None = None) -> VectorStore:
 
     if backend == "memory":
         return InMemoryVectorStore()
+    if backend == "pgvector":
+        from factories.vectorstore.pgvector.client import PgVectorStore
+
+        return PgVectorStore()
+    if backend == "weaviate":
+        from factories.vectorstore.weaviate.client import WeaviateVectorStore
+
+        return WeaviateVectorStore()
     raise ValueError(f"Unsupported vector store backend: {backend}")

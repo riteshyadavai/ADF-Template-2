@@ -13,6 +13,7 @@ from agents.memory import ColdStateStore, HotStateStore
 from config.settings import Settings, get_settings
 from factories.a2a.factory import make_a2a_server
 from factories.a2a.protocol import A2AServerBundle
+from factories.adk.app import make_adk_app
 from factories.adk.factory import make_adk_runner
 from factories.adk.protocol import ADKRunner
 from factories.ai_gateway.litellm.factory import make_ai_gateway
@@ -28,6 +29,8 @@ from factories.guardrails.factory import make_content_guardrail
 from factories.guardrails.protocol import ContentGuardrail
 from factories.llm.factory import make_llm_client
 from factories.llm.protocol import LLMClientProtocol
+from factories.mcp.factory import make_mcp_bundle
+from factories.mcp.protocol import MCPBundle
 from factories.observability.factory import (
     make_langfuse,
     make_llm_tracer,
@@ -37,6 +40,8 @@ from factories.observability.langfuse.client import LangfuseTracer
 from factories.observability.protocol import ObservabilityBundle
 from factories.parsers.factory import make_document_parser
 from factories.parsers.protocol import DocumentParser
+from factories.secrets.factory import make_secrets_provider
+from factories.secrets.protocol import SecretsProvider
 from factories.vectorstore.factory import make_vector_store
 from factories.vectorstore.protocol import VectorStore
 
@@ -75,8 +80,17 @@ class FactoryRegistry:
     def eval(self) -> EvalClient:
         return make_eval_client(self.settings)
 
-    def adk_runner(self, agent: BaseAgent) -> ADKRunner | None:
+    def adk_app(self):
+        return make_adk_app(self.settings)
+
+    def adk_runner(self, agent: BaseAgent | None = None) -> ADKRunner | None:
         return make_adk_runner(agent, self.settings)
+
+    def mcp(self) -> MCPBundle:
+        return make_mcp_bundle(self.settings)
+
+    def secrets(self) -> SecretsProvider:
+        return make_secrets_provider(self.settings)
 
     def a2a_server(
         self,

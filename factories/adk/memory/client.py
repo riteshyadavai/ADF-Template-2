@@ -72,7 +72,7 @@ class InMemoryADKRunner(ADKRunner):
             session_id=resolved_session_id,
             new_message=types.Content(
                 role="user",
-                parts=[types.Part(text=message)],
+                parts=[types.Part.from_text(text=message)],
             ),
         ):
             yield event

@@ -10,9 +10,18 @@ from factories.cache.protocol import CacheProvider
 
 class RedisCacheProvider(CacheProvider):
     def __init__(self, url: str) -> None:
+        if not url:
+            raise ValueError("CACHE_REDIS_URL is required when CACHE_BACKEND=redis")
         import redis.asyncio as redis
 
         self._client = redis.from_url(url, decode_responses=True)
+
+    async def aclose(self) -> None:
+        close = getattr(self._client, "aclose", None)
+        if close is not None:
+            await close()
+            return
+        await self._client.close()
 
     async def get(self, key: str) -> Any | None:
         raw = await self._client.get(key)

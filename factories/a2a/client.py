@@ -36,6 +36,33 @@ class A2AClient(A2AClientProtocol):
             await self._httpx_client.aclose()
 
 
+async def send_text(client: A2AClient, text: str) -> str:
+    """Send a plain-text user message and collect streamed text."""
+    from uuid import uuid4
+
+    from a2a.types import Message, Part, SendMessageRequest
+
+    part = Part()
+    part.text = text
+    message = Message()
+    message.message_id = str(uuid4())
+    message.parts.append(part)
+    request = SendMessageRequest()
+    request.message.CopyFrom(message)
+    chunks: list[str] = []
+    async for event in client.send_message(request):
+        event_text = getattr(event, "text", None)
+        if event_text:
+            chunks.append(str(event_text))
+            continue
+        parts = getattr(event, "parts", None)
+        if parts:
+            for item in parts:
+                if getattr(item, "text", None):
+                    chunks.append(str(item.text))
+    return "".join(chunks)
+
+
 async def connect_a2a_client(
     agent_url: str,
     *,

@@ -1,0 +1,36 @@
+id: retail
+name: Retail
+description: Merchandising and returns-assist workflows.
+workflows:
+  - id: returns
+    name: returns and refund assist
+    description: Classify a return request and next-best action.
+    agents:
+      - name: returns_intake
+        description: Extracts order, reason, and condition.
+        allowed_tools: []
+        prompt_stub: |
+          You are a returns intake agent. Extract order id if present,
+          reason, and item condition. Do not promise a refund.
+    graph:
+      entry: intake
+      nodes:
+        - id: intake
+          agent_name: returns_intake
+          next: []
+  - id: catalog_qa
+    name: product catalog quality
+    description: Flag incomplete product copy and attributes.
+    agents:
+      - name: catalog_reviewer
+        description: Checks title, attributes, and missing images notes.
+        allowed_tools: [vector_search]
+        prompt_stub: |
+          You are a catalog QA agent. Flag missing attributes, vague titles,
+          and contradictory specs. Do not invent SKUs.
+    graph:
+      entry: review
+      nodes:
+        - id: review
+          agent_name: catalog_reviewer
+          next: []

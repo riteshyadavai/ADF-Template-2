@@ -4,6 +4,8 @@ import pytest
 
 from config.settings import Settings
 from factories.adk.factory import make_adk_runner, make_default_llm_agent
+from factories.cache.factory import make_cache_provider
+from factories.cache.memcached.client import MemcachedCacheProvider
 from factories.eval.factory import make_eval_client
 from factories.eval.local.client import LocalEvalClient
 from factories.eval.protocol import EvalCase
@@ -16,6 +18,17 @@ from factories.observability.factory import configure_logfire, make_langfuse
 from factories.observability.langfuse.client import LangfuseTracer
 from factories.vectorstore.factory import make_vector_store
 from factories.vectorstore.opensearch.client import OpenSearchVectorStore
+
+
+def test_cache_factory_selects_memcached():
+    settings = Settings(cache={"backend": "memcached", "memcached_url": "memcached://cache:11211"})
+    try:
+        client = make_cache_provider(settings)
+    except RuntimeError as exc:
+        assert "cache-memcached" in str(exc)
+        return
+    assert isinstance(client, MemcachedCacheProvider)
+    assert client.url == "memcached://cache:11211"
 
 
 def test_passthrough_guardrail_is_default():

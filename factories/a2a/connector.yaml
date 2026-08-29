@@ -1,0 +1,3 @@
+status: implemented
+env: [A2A_ENABLED, A2A_PUBLIC_BASE_URL, A2A_PEER_URL]
+example: uv run python examples/a2a_client_smoke.py

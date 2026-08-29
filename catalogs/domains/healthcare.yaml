@@ -1,0 +1,53 @@
+id: healthcare
+name: Healthcare
+description: Payer and provider operations workflows.
+workflows:
+  - id: prior_auth
+    name: prior authorization assist
+    description: Draft a prior-auth packet from clinical notes.
+    agents:
+      - name: prior_auth_intake
+        description: Extracts procedure, diagnosis, and payer hints.
+        allowed_tools: [vector_search]
+        prompt_stub: |
+          You are a prior authorization intake agent. Extract procedure,
+          diagnosis codes if present, and missing clinical evidence.
+          Do not invent CPT or ICD codes.
+    graph:
+      entry: intake
+      nodes:
+        - id: intake
+          agent_name: prior_auth_intake
+          next: []
+  - id: claims
+    name: claims adjudication assist
+    description: Summarize a claim and likely denial reasons.
+    agents:
+      - name: claims_summarizer
+        description: Structures claim lines and flags documentation gaps.
+        allowed_tools: [vector_search]
+        prompt_stub: |
+          You are a claims assist agent. Summarize line items and likely
+          documentation gaps. Do not approve or deny payment.
+    graph:
+      entry: summarize
+      nodes:
+        - id: summarize
+          agent_name: claims_summarizer
+          next: []
+  - id: clinical_summary
+    name: clinical note summarization
+    description: Produce a short clinical summary for a care team.
+    agents:
+      - name: clinical_summarizer
+        description: Compresses notes into problems, meds, and follow-ups.
+        allowed_tools: []
+        prompt_stub: |
+          You are a clinical summarization agent. Produce problems,
+          medications, and follow-ups. Do not invent vitals or labs.
+    graph:
+      entry: summarize
+      nodes:
+        - id: summarize
+          agent_name: clinical_summarizer
+          next: []

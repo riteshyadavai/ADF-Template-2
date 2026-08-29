@@ -25,4 +25,8 @@ def make_llm_client(settings: Settings | None = None) -> LLMClientProtocol:
             default_model=settings.ollama.model,
             timeout_seconds=settings.ollama.timeout_seconds,
         )
+    if provider == "kong":
+        from factories.llm.kong.client import KongLLMClient
+
+        return KongLLMClient()
     raise ValueError(f"Unsupported LLM provider: {provider}")

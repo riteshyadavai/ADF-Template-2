@@ -7,7 +7,7 @@ dev: install
 	uv run uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 
 lint:
-	uv run ruff check app agents shared factories config tests examples
+	uv run ruff check app agents shared factories config tests examples cli
 
 typecheck:
 	uv run mypy app agents shared factories config --ignore-missing-imports
@@ -28,7 +28,7 @@ openapi:
 	uv run python -c "from app.main import export_openapi; export_openapi()"
 
 run:
-	uv run factory
+	uv run factory serve
 
 docker-build:
 	docker build -t multi-agent-factory:latest .

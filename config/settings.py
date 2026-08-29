@@ -84,14 +84,16 @@ class OllamaSettings(BaseSettings):
 class CacheSettings(BaseSettings):
     model_config = SettingsConfigDict(env_prefix="CACHE_")
 
-    backend: str = "memory"  # memory | redis
+    backend: str = "memory"  # memory | redis | memcached
     redis_url: str = "redis://localhost:6379/0"
+    memcached_url: str = "memcached://localhost:11211"
     default_ttl_seconds: int = 3600
 
 
 class DatabaseSettings(BaseSettings):
     model_config = SettingsConfigDict(env_prefix="DB_")
 
+    backend: str = "memory"  # memory | sqlite
     hot_url: str = "sqlite+aiosqlite:///./data/hot_state.db"
     cold_url: str = "sqlite+aiosqlite:///./data/cold_state.db"
 
@@ -102,6 +104,7 @@ class VectorStoreSettings(BaseSettings):
     backend: str = "memory"  # memory | qdrant | pgvector | weaviate | opensearch
     embedding_model: str = "text-embedding-004"
     embedding_model_version: str = "v1"
+    embeddings_backend: str = "litellm"  # litellm | jina
     qdrant_url: str | None = None
     opensearch_url: str = "http://localhost:9200"
     opensearch_username: str | None = None
@@ -148,6 +151,7 @@ class A2ASettings(BaseSettings):
     streaming: bool = True
     extended_agent_card: bool = False
     client_timeout_seconds: float = 60.0
+    peer_url: str = "http://127.0.0.1:8000"
 
 
 class EvalSettings(BaseSettings):

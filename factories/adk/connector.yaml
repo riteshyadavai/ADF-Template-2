@@ -1,0 +1,3 @@
+status: implemented
+env: [ADK_ENABLED, ADK_APP_NAME, ADK_DEFAULT_MODEL]
+example: uv run python examples/adk_smoke.py

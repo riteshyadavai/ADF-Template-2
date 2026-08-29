@@ -16,6 +16,8 @@ def test_factory_registry_exposes_all_services():
     assert reg.content_guardrail() is not None
     assert reg.document_parser() is not None
     assert reg.eval().backend == "local"
+    assert reg.mcp() is not None
+    assert reg.secrets().get_secret("MISSING_FACTORY_SECRET") is None
 
 
 def test_factory_registry_singleton():

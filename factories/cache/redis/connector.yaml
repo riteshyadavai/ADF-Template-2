@@ -1,0 +1,3 @@
+status: implemented
+env: [CACHE_BACKEND, CACHE_REDIS_URL]
+health: redis-cli ping

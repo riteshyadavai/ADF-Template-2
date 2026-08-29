@@ -1,0 +1,88 @@
+id: banking
+name: Banking
+description: Retail and commercial banking agent workflows.
+workflows:
+  - id: kyc
+    name: KYC / customer onboarding
+    description: Collect identity evidence and prepare an onboarding decision.
+    agents:
+      - name: kyc_intake
+        description: Collects KYC documents and structured applicant facts.
+        allowed_tools: [vector_search]
+        prompt_stub: |
+          You are a KYC intake agent. Extract identity facts from the query
+          and list missing documents. Do not invent government IDs.
+      - name: kyc_review
+        description: Summarizes residual KYC risk for a human reviewer.
+        allowed_tools: []
+        prompt_stub: |
+          You are a KYC review agent. Summarize residual risk and recommend
+          approve, decline, or request more information.
+    graph:
+      entry: intake
+      nodes:
+        - id: intake
+          agent_name: kyc_intake
+          next: [review]
+        - id: review
+          agent_name: kyc_review
+          requires_hitl: true
+          next: []
+  - id: fraud
+    name: transaction fraud review
+    description: Score a suspicious transaction and pause for analyst approval.
+    agents:
+      - name: fraud_intake
+        description: Structures transaction and customer context for review.
+        allowed_tools: [vector_search]
+        prompt_stub: |
+          You are a fraud intake agent. Extract merchant, amount, channel,
+          and anomaly signals from the query.
+      - name: fraud_review
+        description: Recommends hold, release, or escalate.
+        allowed_tools: []
+        prompt_stub: |
+          You are a fraud review agent. Recommend hold, release, or escalate
+          with a short rationale. Do not claim you blocked funds.
+    graph:
+      entry: intake
+      nodes:
+        - id: intake
+          agent_name: fraud_intake
+          next: [review]
+        - id: review
+          agent_name: fraud_review
+          requires_hitl: true
+          next: []
+  - id: loan_origination
+    name: loan application intake and underwriting assist
+    description: Structure a loan application and flag policy gaps.
+    agents:
+      - name: loan_intake
+        description: Collects application fields and stated purpose.
+        allowed_tools: [vector_search]
+        prompt_stub: |
+          You are a loan intake agent. Extract applicant, amount, purpose,
+          and collateral from the query.
+    graph:
+      entry: intake
+      nodes:
+        - id: intake
+          agent_name: loan_intake
+          next: []
+  - id: compliance
+    name: policy and regulatory review
+    description: Compare a proposed action against banking policy stubs.
+    agents:
+      - name: compliance_reviewer
+        description: Maps the query to policy themes and residual issues.
+        allowed_tools: [vector_search]
+        prompt_stub: |
+          You are a banking compliance reviewer. List policy themes that apply
+          and call out missing controls. This is not legal advice.
+    graph:
+      entry: review
+      nodes:
+        - id: review
+          agent_name: compliance_reviewer
+          next: []

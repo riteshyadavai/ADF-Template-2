@@ -1,4 +1,4 @@
-.PHONY: install dev lint typecheck test contract integration eval openapi run docker-build clean
+.PHONY: install dev lint typecheck test contract integration eval openapi run docs docker-build clean
 
 install:
 	uv sync --all-groups
@@ -29,6 +29,24 @@ openapi:
 
 run:
 	uv run factory serve
+
+docs:
+	uv sync --group docs
+	uv run mkdocs serve -a 127.0.0.1:8001
+
+docs-build:
+	uv sync --group docs
+	uv run mkdocs build
+	rm -rf deploy/docs/site
+	cp -R site deploy/docs/site
+
+docs-deploy: docs-build
+	gcloud run deploy adf-factory-docs \
+		--project=ai-ml-team-sandbox \
+		--region=us-central1 \
+		--source deploy/docs \
+		--allow-unauthenticated \
+		--port=8080
 
 docker-build:
 	docker build -t multi-agent-factory:latest .

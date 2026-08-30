@@ -19,5 +19,7 @@ venv/
 # Factory runtime artifacts
 data/
 dist/
+site/
+deploy/docs/site/
 .mypy_cache/
 .ruff_cache/

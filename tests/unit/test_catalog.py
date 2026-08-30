@@ -6,7 +6,7 @@ from cli.catalog import load_domains
 def test_all_domain_catalogs_validate():
     domains = load_domains()
     ids = {d.id for d in domains}
-    assert ids == {"baking", "banking", "healthcare", "insurance", "retail"}
+    assert ids == {"banking", "healthcare", "insurance", "retail"}
     for domain in domains:
         assert domain.workflows
         seen = set()

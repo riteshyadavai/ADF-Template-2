@@ -1,117 +1,193 @@
-# ADF Template
+# 66degrees Factory
 
-Reusable template for multi-agent apps. Generate a project with `66degrees-factory init` (one domain + one workflow), or clone this repo and run it as-is.
+Package **`multi-agent-factory` 0.2.2**. Console command **`66degrees-factory`** (alias **`factory`**).
+
+This repo is the **generator** and the default runtime template. `init` writes a **developer agent app** (one domain + one workflow). It does **not** copy `catalogs/` or `cli/` into that app.
 
 **Requires:** Python 3.11+, [uv](https://docs.astral.sh/uv/)
 
-## Quick start (CLI)
+**Docs:** [https://adf-factory-docs-741027775203.us-central1.run.app](https://adf-factory-docs-741027775203.us-central1.run.app)
+
+---
+
+## Install the CLI
+
+`uvx` runs once and does **not** put `66degrees-factory` on `PATH`. For a lasting command:
 
 ```bash
-uv sync --all-groups
-uv run 66degrees-factory init --name my-kyc --domain banking --workflow kyc --yes
-cd my-kyc
+export PATH="$HOME/.local/bin:$PATH"   # keep this in ~/.zshrc
+```
+
+### From this checkout
+
+```bash
+cd /Users/ritesh/Desktop/multi-agent-factory
 uv sync
-# set GOOGLE_API_KEY (and other CHANGE_ME keys in .env)
-make dev                      # http://localhost:8000/api/v1/docs
+uv tool install --editable .
+66degrees-factory --help
 ```
 
-Interactive (prompts for project, domain, one workflow, and every factory):
+### From Artifact Registry (hosted package)
+
+Private index. `uv` does not use `gcloud` unless you pass a token. Use **`--extra-index-url`** (not `--index-url`, which hides PyPI).
 
 ```bash
-uv run 66degrees-factory init
+gcloud auth login
+export TOKEN=$(gcloud auth print-access-token)
+export AR_SIMPLE="https://oauth2accesstoken:${TOKEN}@us-central1-python.pkg.dev/ai-ml-team-sandbox/adf-factory-pypi/simple/"
+
+uv tool install multi-agent-factory --reinstall --extra-index-url "$AR_SIMPLE"
+66degrees-factory --help
 ```
 
-Catalog helpers:
+One-shot (no global command):
 
 ```bash
-uv run 66degrees-factory list-domains
-uv run 66degrees-factory list-workflows --domain banking
-uv run 66degrees-factory init --name demo --domain baking --workflow allergen_compliance --yes --dry-run
+uvx --extra-index-url "$AR_SIMPLE" --from multi-agent-factory 66degrees-factory --help
 ```
 
-Serve (same as the old `factory` entry point):
+Needs `roles/artifactregistry.reader` on repo `adf-factory-pypi` in project `ai-ml-team-sandbox`.
+
+---
+
+## Generate a project
+
+Output must be a **new empty directory**. Do not init into this template repo.
 
 ```bash
-uv run 66degrees-factory serve
-# or
-uv run factory serve
+66degrees-factory init --output ~/Desktop/demo-kyc
 ```
 
-### Hosting and factory updates
+Non-interactive:
 
-`init` copies a **versioned snapshot** of this repo (including all of `factories/`) from the installed package or git checkout — not from your current working directory. The generated `config/project.yaml` records `template_package` and `template_version`.
+```bash
+66degrees-factory init \
+  --name demo-kyc \
+  --output ~/Desktop/demo-kyc \
+  --domain banking \
+  --workflow kyc \
+  --yes
+```
 
-When you publish a new CLI version (PyPI, private index, or git tag), **new** `init` runs get the new factories. Existing projects keep the factory code they were generated with. To take a newer snapshot later, re-init into a new folder or (planned) `66degrees-factory upgrade --factories`. Do not edit `factories/` in child projects if you want those upgrades to stay clean. Pin the CLI version in a team runbook (`66degrees-factory==0.2.0`).
+```bash
+66degrees-factory list-domains
+66degrees-factory list-workflows --domain banking
+66degrees-factory list-factories
+66degrees-factory init --name demo --domain retail --workflow returns --yes --dry-run
+```
 
-A later `configure` command could rewrite `.env` only; v1 does not mutate an already-initialized project.
+| Domain | Workflows |
+|--------|-----------|
+| `banking` | `kyc`, `fraud`, `loan_origination`, `compliance` |
+| `healthcare` | `prior_auth`, `claims`, `clinical_summary` |
+| `insurance` | `fnol`, `policy_qa` |
+| `retail` | `returns`, `catalog_qa` |
 
-## Clone this template instead
+### What `init` writes
+
+| In the app | Purpose |
+|------------|---------|
+| `app/`, `agents/`, `factories/`, `config/`, `shared/` | Runtime |
+| `domains/<domain>/workflows/<workflow>/` | That workflow only |
+| `.env`, `config/project.yaml` | Backends and domain/workflow |
+| `factory-choices.json` | Wizard record (`--from-choices`) |
+
+**Not copied:** `catalogs/`, `cli/`, site-packages (`aiohttp`, `*.dist-info`). Unused factory **backends** stay under `factories/` so env can switch later.
+
+Then:
+
+```bash
+cd ~/Desktop/demo-kyc
+uv sync
+# set GOOGLE_API_KEY and other CHANGE_ME keys in .env
+make dev    # http://localhost:8000/api/v1/docs
+```
+
+---
+
+## Run this repo as the template (no generate)
 
 ```bash
 git clone https://github.com/riteshyadavai/ADF-Template-2.git
 cd ADF-Template-2
 uv sync --all-groups
-cp .env.example .env          # set GOOGLE_API_KEY (or another LLM key)
+cp .env.example .env
 make dev
 ```
 
-Optional backends:
-
 ```bash
-uv sync --extra aws           # Bedrock LLM / guardrails
-uv sync --extra documents     # Docling PDF parsing
-uv sync --extra opensearch    # OpenSearch vector store
-uv sync --group observability # Langfuse + Logfire
-uv sync --group eval          # DeepEval
+uv run 66degrees-factory serve
 ```
 
-Scripts without HTTP:
+Optional extras:
+
+```bash
+uv sync --extra aws
+uv sync --extra documents
+uv sync --extra opensearch
+uv sync --extra qdrant
+uv sync --extra cache-memcached
+uv sync --group observability
+uv sync --group eval
+```
 
 ```bash
 uv run python examples/single_agent.py
 uv run python examples/multi_agent.py
 ```
 
-## Layout
+---
+
+## This repo vs a generated app
+
+| | Factory repo (this tree) | Generated project |
+|--|--------------------------|-------------------|
+| `cli/`, `catalogs/` | Yes — generator | No |
+| `domains/` | Empty until you init elsewhere | One domain + one workflow |
+| Console scripts | `66degrees-factory`, `factory` | None (use `make dev`) |
+
+`Platform` loads `domains/…` when `config/project.yaml` exists. This checkout without that file uses the default `respond` graph.
+
+---
+
+## Layout (factory repo)
 
 ```text
-cli/          66degrees-factory (init, list-*, serve)
-catalogs/     domain → workflow YAML used at generate time
-config/       YAML + pydantic settings (env overlays)
-app/          FastAPI (`main.py`, `routes/`, `platform.py`)
-agents/       run loop, manifests, prompts, memory, MCP allow-lists
-shared/       logger, errors, schemas, metrics (used by everyone)
-factories/    vendor backends — swap without changing agents
+cli/          init, list-*, serve
+catalogs/     domains and factory backends for the wizard
+config/       YAML + pydantic settings
+app/          FastAPI
+agents/       run loop, manifests, prompts
+shared/       logging, errors, schemas
+factories/    vendor backends (env-selected)
 tests/        unit, contract, integration
-evals/        regression / ADK eval sets
-examples/     small scripts
+evals/        eval sets
+examples/     scripts
+docs/         MkDocs source
 ```
 
 | Folder | Change it when |
 |--------|----------------|
-| `app/` | HTTP routes or startup wiring |
-| `agents/` | How an agent plans and runs |
-| `factories/` | Redis vs memory, LiteLLM vs Bedrock, DeepEval, ADK, A2A |
-| `shared/` | Logging, errors, common request types |
-| `config/` | Defaults and environment YAML |
-| `catalogs/` | New domains or workflows for `init` |
+| `catalogs/` | New domain or workflow for `init` |
+| `factories/` | New backend |
+| `app/` | HTTP / startup |
+| `agents/` | How a run plans and executes |
+| `config/` | Defaults and env overlays |
 
-`Platform` (`app/platform.py`) is the composition root: it builds the orchestrator and `FactoryRegistry`. If `config/project.yaml` points at `domains/<domain>/workflows/<workflow>/`, it loads those manifests, prompts, and `graph.yaml`.
+---
 
 ## HTTP API
 
-Base path: `/api/v1`
+Base: `/api/v1`. Local overlay skips auth. Header `X-Tenant-ID` (default `default`).
 
 | Method | Path | Purpose |
 |--------|------|---------|
 | GET | `/health` | Liveness |
 | GET | `/ready` | Readiness |
-| POST | `/agents/run` | Run the orchestrator |
-| POST | `/agents/run/stream` | Stream a run |
-| POST | `/agents/runs/{id}/resume` | Resume after HITL |
-| GET | `/costs/{tenant_id}` | Spend for a tenant |
-
-Headers: `X-Tenant-ID` (default `default`), optional `Idempotency-Key`. Local env skips auth.
+| POST | `/agents/run` | Run orchestrator |
+| POST | `/agents/run/stream` | Stream |
+| POST | `/agents/runs/{id}/resume` | Resume HITL |
+| GET | `/costs/{tenant_id}` | Tenant spend |
 
 ```bash
 curl -s -X POST http://localhost:8000/api/v1/agents/run \
@@ -119,60 +195,62 @@ curl -s -X POST http://localhost:8000/api/v1/agents/run \
   -d '{"query":"Say hello in one sentence."}'
 ```
 
+---
+
 ## Factories
 
-Each factory is `protocol.py` + backend `client.py` + `make_*()` in `factory.py`. Wired in `factories/registry.py`.
+Runtime selection is env. `init` only writes `.env`.
 
 ```python
 from factories.registry import get_factory_registry
 
 reg = get_factory_registry()
-cache = reg.cache()              # memory | redis | memcached
-gateway = reg.ai_gateway()       # LiteLLM (+ budget, redaction)
-eval_client = reg.eval()         # local | deepeval
+cache = reg.cache()
+gateway = reg.ai_gateway()
 ```
 
-| Factory | Backends | Env |
-|---------|----------|-----|
-| AI Gateway | LiteLLM | `GATEWAY_PROVIDER`, `GATEWAY_DEFAULT_MODEL` |
-| Cache | memory, Redis, memcached | `CACHE_BACKEND` |
-| LLM | LiteLLM, Bedrock, Ollama | `GATEWAY_PROVIDER` |
-| Vector store | memory, OpenSearch, Qdrant | `VECTOR_BACKEND` (pgvector/weaviate planned) |
-| Guardrails | passthrough, Bedrock | `SECURITY_CONTENT_GUARDRAIL_BACKEND` |
-| Parsers | Docling | `PDF_BACKEND` |
-| Eval | local, DeepEval | `EVAL_BACKEND` |
+| Capability | Implemented | Env |
+|------------|-------------|-----|
+| Gateway | litellm, openai, bedrock, ollama | `GATEWAY_PROVIDER` |
+| Cache | memory, redis, memcached | `CACHE_BACKEND` |
+| Vector | memory, opensearch, qdrant | `VECTOR_BACKEND` |
+| Embeddings | litellm, jina | `EMBEDDINGS_BACKEND` |
+| Parser | docling | `PDF_BACKEND` |
+| Guardrails | passthrough, bedrock | `SECURITY_CONTENT_GUARDRAIL_BACKEND` |
+| Eval | local, deepeval | `EVAL_BACKEND` |
+| State | memory, sqlite | `DB_BACKEND` |
 | Observability | Langfuse, Logfire | `LANGFUSE_*`, `LOGFIRE_*` |
-| ADK | in-memory runner | `ADK_ENABLED` |
-| A2A | JSON-RPC / REST | `A2A_ENABLED` |
+| ADK / A2A | in-memory / SDK mount | `ADK_ENABLED`, `A2A_ENABLED` |
 
-## Add an agent
+Kong, pgvector, weaviate, vault, sops are planned (`NotImplementedError`).
 
-1. Write a `manifest.yaml` (name, semver, `allowed_tools`, `prompt_version`).
-2. Register it: `platform.agents.register_from_manifest(path)`.
-3. Put instructions under `agents/prompts/versions/` as `{name}_{version}.md`.
+---
 
-Or add a workflow to `catalogs/domains/<domain>.yaml` (id, agents, prompt stubs, graph) and run `init` again into a new folder.
+## Config and tests
 
-Contract tests live in `tests/contract/`. Fixture example: `tests/fixtures/agents/example_research.yaml`.
-
-## Config
-
-Copy `.env.example` → `.env`. Overlays: `config/environments/{local,production}.yaml`. Generated projects also have `config/project.yaml` and `factory-choices.json`.
-
-Minimum for Gemini via LiteLLM: `GOOGLE_API_KEY`.
-
-## Tests
+Copy `.env.example` → `.env` in this repo. Generated apps already have `.env`. Minimum for Gemini via LiteLLM: `GOOGLE_API_KEY`.
 
 ```bash
-make test          # unit (skips integration)
-make contract      # manifests + MCP
-make integration   # FastAPI health
-uv run ruff check app agents shared factories config tests cli
+make test
+make contract
+make integration
+uv run ruff check app agents shared factories config tests examples cli
 ```
+
+---
 
 ## Docs
 
-- [Layers](docs/architecture/layers.md)
-- [Factories](docs/architecture/factories.md)
-- [Agent contracts](docs/agents/capability-contracts.md)
-- [Security](docs/security/guardrails.md)
+```bash
+make docs          # http://127.0.0.1:8001
+make docs-deploy   # Cloud Run adf-factory-docs (ai-ml-team-sandbox only)
+```
+
+- [Install](docs/guide/install.md)
+- [CLI](docs/guide/cli.md)
+- [Init](docs/guide/init.md)
+- [Factories](docs/guide/factories.md)
+- [Run](docs/guide/run.md)
+- [Publish the package](docs/guide/publish-gcp.md)
+
+New CLI versions update **new** `init` snapshots (`template_version` in `config/project.yaml`). Existing apps keep the factories they were generated with. Pin `multi-agent-factory==0.2.2` in a team runbook.

@@ -1,0 +1,99 @@
+site_name: 66degrees Factory
+site_description: Operator guide for the multi-agent-factory CLI, catalogs, and backends.
+site_url: https://adf-factory-docs-741027775203.us-central1.run.app
+repo_url: https://github.com/riteshyadavai/ADF-Template-2
+repo_name: ADF-Template-2
+copyright: Copyright &copy; 66degrees
+
+theme:
+  name: material
+  language: en
+  icon:
+    logo: material/cube-outline
+    repo: fontawesome/brands/github
+  palette:
+    - scheme: slate
+      primary: black
+      accent: indigo
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+    - scheme: default
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+  features:
+    - announce.dismiss
+    - navigation.instant
+    - navigation.instant.prefetch
+    - navigation.tracking
+    - navigation.tabs
+    - navigation.tabs.sticky
+    - navigation.sections
+    - navigation.expand
+    - navigation.top
+    - navigation.footer
+    - search.highlight
+    - search.suggest
+    - search.share
+    - content.code.copy
+    - content.code.annotate
+    - content.tabs.link
+    - toc.follow
+
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/riteshyadavai/ADF-Template-2
+
+plugins:
+  - search:
+      lang: en
+
+markdown_extensions:
+  - abbr
+  - admonition
+  - attr_list
+  - def_list
+  - footnotes
+  - md_in_html
+  - tables
+  - toc:
+      permalink: true
+  - pymdownx.betterem
+  - pymdownx.caret
+  - pymdownx.mark
+  - pymdownx.tilde
+  - pymdownx.details
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.superfences
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
+
+nav:
+  - Home: index.md
+  - Guide:
+      - Install: guide/install.md
+      - CLI reference: guide/cli.md
+      - Init: guide/init.md
+      - Factories: guide/factories.md
+      - Run: guide/run.md
+      - Publish the package: guide/publish-gcp.md
+      - Host this site: guide/host-docs.md
+  - Architecture:
+      - Overview: architecture/overview.md
+      - Layers: architecture/layers.md
+      - Factories: architecture/factories.md
+  - Agents: agents/capability-contracts.md
+  - Security: security/guardrails.md
+  - Observability: observability/run-record.md

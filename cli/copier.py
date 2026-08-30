@@ -22,8 +22,34 @@ IGNORE_DIR_NAMES = {
     "dist",
     "htmlcov",
     ".tox",
+    "site",
 }
 IGNORE_FILE_NAMES = {".env", "uv.lock", ".coverage"}
+# When the CLI is installed via `uv tool`, template_root() is site-packages.
+# Only copy the template snapshot — never aiohttp, boto3, *.dist-info, etc.
+TEMPLATE_TOP_LEVEL = frozenset(
+    {
+        "app",
+        "agents",
+        "factories",
+        "config",
+        "shared",
+        "tests",
+        "evals",
+        "docs",
+        "examples",
+        "deployment",
+        "data",
+        "notebooks",
+        "Makefile",
+        "README.md",
+        ".env.example",
+        "Dockerfile",
+        "LICENSE",
+        "pyproject.toml",
+        "mkdocs.yml",
+    }
+)
 REQUIRED_DIRS = (
     "app",
     "agents",
@@ -44,7 +70,11 @@ def should_skip(path: Path, root: Path) -> bool:
         return True
     if path.name in IGNORE_FILE_NAMES:
         return True
-    if path.suffix in {".pyc", ".pyo"}:
+    if path.suffix in {".pyc", ".pyo", ".so"}:
+        return True
+    if any(part.endswith(".dist-info") or part.endswith(".egg-info") for part in rel_parts):
+        return True
+    if rel_parts[0] not in TEMPLATE_TOP_LEVEL:
         return True
     return False
 
@@ -84,6 +114,13 @@ def render_project_files(dest: Path, choices: FactoryChoices) -> None:
         text = text.replace(
             'name = "multi-agent-factory"',
             f'name = "{choices.project_name}"',
+            1,
+        )
+        text = text.replace(
+            '[project.scripts]\n'
+            '66degrees-factory = "cli.main:app"\n'
+            'factory = "cli.main:app"\n\n',
+            "",
             1,
         )
         pyproject.write_text(text, encoding="utf-8")

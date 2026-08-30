@@ -33,9 +33,9 @@ def test_init_dry_run_writes_nothing(tmp_path: Path):
             "--output",
             str(dest),
             "--domain",
-            "baking",
+            "retail",
             "--workflow",
-            "allergen_compliance",
+            "returns",
             "--yes",
             "--dry-run",
         ],
@@ -88,8 +88,11 @@ def test_init_yes_copies_full_tree_and_one_workflow(tmp_path: Path):
     assert "workflow: prior_auth" in project
     assert "template_version:" in project
     assert (dest / "factory-choices.json").exists()
+    assert not (dest / "catalogs").exists()
+    assert not (dest / "cli").exists()
     pyproject = (dest / "pyproject.toml").read_text(encoding="utf-8")
     assert 'name = "hospital-prior-auth"' in pyproject
+    assert "66degrees-factory" not in pyproject
 
 
 def test_list_domains():
@@ -135,3 +138,29 @@ def test_init_dry_run_qdrant_env(tmp_path: Path):
     )
     assert result.exit_code == 0, result.output
     assert "VECTOR_BACKEND=qdrant" in result.output
+
+
+def test_copy_skips_site_packages_neighbors(tmp_path: Path):
+    from cli.copier import copy_template
+
+    src = tmp_path / "site-packages"
+    src.mkdir()
+    (src / "app").mkdir()
+    (src / "app" / "main.py").write_text("# app\n", encoding="utf-8")
+    (src / "factories").mkdir()
+    (src / "factories" / "ok.py").write_text("# factories\n", encoding="utf-8")
+    (src / "pyproject.toml").write_text('[project]\nname = "multi-agent-factory"\n', encoding="utf-8")
+    (src / "aiohttp").mkdir()
+    (src / "aiohttp" / "__init__.py").write_text("# leak\n", encoding="utf-8")
+    (src / "aiohttp-3.14.3.dist-info").mkdir()
+    (src / "aiohttp-3.14.3.dist-info" / "METADATA").write_text("Name: aiohttp\n", encoding="utf-8")
+    (src / "_cffi_backend.cpython-312-darwin.so").write_bytes(b"\x00")
+
+    dest = tmp_path / "out"
+    written = copy_template(src, dest)
+    assert "app/main.py" in written
+    assert "factories/ok.py" in written
+    assert "pyproject.toml" in written
+    assert not (dest / "aiohttp").exists()
+    assert not (dest / "aiohttp-3.14.3.dist-info").exists()
+    assert not (dest / "_cffi_backend.cpython-312-darwin.so").exists()

@@ -1,6 +1,6 @@
 [project]
 name = "multi-agent-factory"
-version = "0.2.0"
+version = "0.2.2"
 description = "Production-ready reusable multi-agent project factory with shared infrastructure, security, and observability."
 readme = "README.md"
 requires-python = ">=3.11"
@@ -48,6 +48,10 @@ eval = [
 observability = [
     "logfire>=3.0.0",
     "langfuse>=3.0.0",
+]
+docs = [
+    "mkdocs>=1.6.0",
+    "mkdocs-material>=9.6.0",
 ]
 
 [project.scripts]

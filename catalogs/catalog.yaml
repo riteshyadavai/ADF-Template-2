@@ -1,0 +1,481 @@
+version: "0.2.5"
+domains:
+  bfs:
+    name: Banking and Financial Services
+    aliases: [bfs, banking]
+    description: Retail and commercial banking agent workflows.
+    workflows:
+      afi:
+        name: Autonomous Fraud Investigation
+        aliases: [afi, fraud]
+        summary: Gather transaction evidence, trace counterparties, and write a case narrative. Pause for an analyst before closing.
+        recommended_stack:
+          gateway: litellm
+          cache: redis
+          vector: memory
+        agents:
+          - name: afi_intake
+            description: Structures the alert, account, and claimed anomaly.
+            allowed_tools: [vector_search]
+            prompt_stub: |
+              You are a fraud intake agent for banking. Extract account hints,
+              merchant, amount, channel, and why the event looks suspicious.
+              Do not invent balances or alerts. Cite only facts from the query.
+          - name: afi_investigator
+            description: Builds a case narrative from intake facts.
+            allowed_tools: [vector_search]
+            prompt_stub: |
+              You are a fraud investigation agent. Trace counterparties and
+              recommend next steps. Use AnySQL-style bounded reasoning; do not
+              invent balances. Flag uncertainty and cite prior intake facts.
+          - name: afi_reviewer
+            description: Prepares an analyst HITL packet.
+            allowed_tools: []
+            prompt_stub: |
+              You are a fraud case reviewer. Summarize residual risk and
+              recommend escalate, clear, or request more evidence. Do not close
+              the case yourself.
+        graph:
+          entry: intake
+          nodes:
+            - id: intake
+              agent_name: afi_intake
+              next: [investigate]
+            - id: investigate
+              agent_name: afi_investigator
+              next: [review]
+            - id: review
+              agent_name: afi_reviewer
+              requires_hitl: true
+              next: []
+      clu:
+        name: Commercial Loan Underwriting
+        aliases: [clu, underwriting]
+        summary: Assemble a credit memo from statements and covenants. A human must approve the decision path.
+        recommended_stack:
+          gateway: litellm
+          cache: memory
+          vector: opensearch
+        agents:
+          - name: clu_intake
+            description: Collects borrower, facility, and document facts.
+            allowed_tools: [vector_search]
+            prompt_stub: |
+              You are a commercial loan intake agent. Extract borrower type,
+              requested amount, collateral hints, and missing statements.
+              Do not approve credit.
+          - name: clu_underwriter
+            description: Drafts risks, mitigants, and a recommended path.
+            allowed_tools: [vector_search]
+            prompt_stub: |
+              You are a commercial underwriting agent. Assemble a credit memo
+              outline. Present risks and mitigants. Do not approve the loan.
+          - name: clu_decision
+            description: HITL credit decision packet.
+            allowed_tools: []
+            prompt_stub: |
+              You are a credit committee packet agent. Summarize the memo for
+              a human decision. Do not issue an approval.
+        graph:
+          entry: intake
+          nodes:
+            - id: intake
+              agent_name: clu_intake
+              next: [underwrite]
+            - id: underwrite
+              agent_name: clu_underwriter
+              next: [decision]
+            - id: decision
+              agent_name: clu_decision
+              requires_hitl: true
+              next: []
+      rca:
+        name: Regulatory Compliance & Auditing
+        aliases: [rca, compliance]
+        summary: Map controls to policy, collect evidence, and record test results. Findings need a human sign-off.
+        recommended_stack:
+          gateway: openai
+          cache: memory
+          vector: memory
+        agents:
+          - name: rca_intake
+            description: Frames the control, policy, and scope.
+            allowed_tools: [vector_search]
+            prompt_stub: |
+              You are a compliance intake agent. Identify the control, policy
+              corpus, and test window. Quote sources. Do not assert a finding.
+          - name: rca_tester
+            description: Runs a documented control test narrative.
+            allowed_tools: [vector_search]
+            prompt_stub: |
+              You are a control test agent. Map evidence to the control.
+              Note gaps. Never assert a finding without evidence.
+          - name: rca_signoff
+            description: HITL findings packet.
+            allowed_tools: []
+            prompt_stub: |
+              You are a compliance sign-off agent. List proposed findings for
+              a human auditor. Do not publish the report.
+        graph:
+          entry: intake
+          nodes:
+            - id: intake
+              agent_name: rca_intake
+              next: [test]
+            - id: test
+              agent_name: rca_tester
+              next: [signoff]
+            - id: signoff
+              agent_name: rca_signoff
+              requires_hitl: true
+              next: []
+  hcls:
+    name: Healthcare and Life Sciences
+    aliases: [hcls, healthcare, "health care"]
+    description: Payer, provider, and discovery agent workflows.
+    workflows:
+      epa:
+        name: End-to-End Prior Authorization
+        aliases: [epa, "prior authorization"]
+        summary: Check coverage rules and assemble an auth packet. A clinician must review before submit.
+        recommended_stack:
+          gateway: litellm
+          cache: redis
+          vector: memory
+        agents:
+          - name: epa_intake
+            description: Extracts procedure, diagnosis, and payer hints.
+            allowed_tools: [vector_search]
+            prompt_stub: |
+              You are a prior-authorization intake agent. Extract procedure,
+              diagnosis if present, and missing clinicals. Protect PHI.
+              Do not invent CPT or ICD codes. Do not guarantee approval.
+          - name: epa_assembler
+            description: Builds the auth packet from intake.
+            allowed_tools: [vector_search]
+            prompt_stub: |
+              You are a prior-auth packet agent. Apply coverage rules and
+              guideline hints. State missing clinicals. Do not guarantee approval.
+          - name: epa_submit
+            description: HITL submit review.
+            allowed_tools: []
+            prompt_stub: |
+              You are a prior-auth submit reviewer. Prepare the packet for a
+              human. Do not send the authorization yourself.
+        graph:
+          entry: intake
+          nodes:
+            - id: intake
+              agent_name: epa_intake
+              next: [assemble]
+            - id: assemble
+              agent_name: epa_assembler
+              next: [submit]
+            - id: submit
+              agent_name: epa_submit
+              requires_hitl: true
+              next: []
+      ctpm:
+        name: Autonomous Clinical Trial Patient Matching
+        aliases: [ctpm, "patient matching"]
+        summary: Compare eligibility criteria to a patient summary. A coordinator reviews matches.
+        recommended_stack:
+          gateway: litellm
+          cache: memory
+          vector: qdrant
+        agents:
+          - name: ctpm_intake
+            description: Structures trial id and patient summary facts.
+            allowed_tools: [vector_search]
+            prompt_stub: |
+              You are a trial-matching intake agent. Extract NCT id if present
+              and non-identifying clinical facts. Do not fabricate EHR data.
+          - name: ctpm_matcher
+            description: Explains inclusion and exclusion matches.
+            allowed_tools: [vector_search]
+            prompt_stub: |
+              You are a clinical trial matching agent. Compare criteria to the
+              summary. Flag PHI handling. Never fabricate EHR data.
+          - name: ctpm_review
+            description: HITL coordinator packet.
+            allowed_tools: []
+            prompt_stub: |
+              You are a matching review agent. List candidate trials for a
+              human coordinator. Do not enroll the patient.
+        graph:
+          entry: intake
+          nodes:
+            - id: intake
+              agent_name: ctpm_intake
+              next: [match]
+            - id: match
+              agent_name: ctpm_matcher
+              next: [review]
+            - id: review
+              agent_name: ctpm_review
+              requires_hitl: true
+              next: []
+      addw:
+        name: Automated Drug Discovery Workflows
+        aliases: [addw, "drug discovery"]
+        summary: Retrieve assay and literature signals and separate hypothesis from measured results.
+        recommended_stack:
+          gateway: ollama
+          cache: memory
+          vector: memory
+        agents:
+          - name: addw_retriever
+            description: Pulls assay and compound hints from the query.
+            allowed_tools: [vector_search]
+            prompt_stub: |
+              You are a discovery retrieval agent. Find assay or compound
+              mentions. Cite the query. Do not invent IC50 values.
+          - name: addw_analyst
+            description: Separates hypothesis from measured results.
+            allowed_tools: [vector_search]
+            prompt_stub: |
+              You are a drug-discovery analyst. Separate hypothesis from
+              measured results. Cite tool-style outputs only from the query.
+        graph:
+          entry: retrieve
+          nodes:
+            - id: retrieve
+              agent_name: addw_retriever
+              next: [analyze]
+            - id: analyze
+              agent_name: addw_analyst
+              next: []
+  retail:
+    name: Retail
+    aliases: [retail]
+    description: Concierge, pricing, and merchandising agent workflows.
+    workflows:
+      accr:
+        name: Autonomous Customer Concierge & Resolution
+        aliases: [accr, concierge]
+        summary: Look up order and return context and apply policy. Escalate when policy cannot be applied.
+        recommended_stack:
+          gateway: litellm
+          cache: memcached
+          vector: memory
+        agents:
+          - name: accr_intake
+            description: Extracts order id, reason, and claimed state.
+            allowed_tools: []
+            prompt_stub: |
+              You are a retail concierge intake agent. Extract order id if
+              present, reason, and item condition. Do not invent order state
+              or promise a refund.
+          - name: accr_resolver
+            description: Applies policy and next-best action.
+            allowed_tools: [vector_search]
+            prompt_stub: |
+              You are a resolution agent. Apply return policy. Escalate when
+              policy cannot be applied. Do not invent order state.
+          - name: accr_escalate
+            description: HITL exception packet.
+            allowed_tools: []
+            prompt_stub: |
+              You are an exception packet agent. Prepare a concise handoff
+              for a human agent. Do not approve a policy exception yourself.
+        graph:
+          entry: intake
+          nodes:
+            - id: intake
+              agent_name: accr_intake
+              next: [resolve]
+            - id: resolve
+              agent_name: accr_resolver
+              next: [escalate]
+            - id: escalate
+              agent_name: accr_escalate
+              requires_hitl: true
+              next: []
+      dcap:
+        name: Dynamic, Context-Aware Pricing
+        aliases: [dcap, pricing]
+        summary: Combine competitor and inventory signals and recommend a price without breaching guardrails.
+        recommended_stack:
+          gateway: litellm
+          cache: redis
+          vector: memory
+        agents:
+          - name: dcap_signals
+            description: Collects SKU, inventory, and competitor hints.
+            allowed_tools: [vector_search]
+            prompt_stub: |
+              You are a pricing signals agent. Extract SKU, inventory hints,
+              and competitor mentions. Do not invent prices.
+          - name: dcap_recommender
+            description: Recommends a price within guardrails.
+            allowed_tools: []
+            prompt_stub: |
+              You are a pricing recommender. Explain drivers. Never breach
+              stated guardrails. Do not apply the price in a live system.
+        graph:
+          entry: signals
+          nodes:
+            - id: signals
+              agent_name: dcap_signals
+              next: [recommend]
+            - id: recommend
+              agent_name: dcap_recommender
+              next: []
+      avmts:
+        name: Automated Visual Merchandising & Trend Sourcing
+        aliases: [avmts, merchandising]
+        summary: Tag shelf descriptions and suggest planogram changes with low-confidence callouts.
+        recommended_stack:
+          gateway: litellm
+          cache: memory
+          vector: opensearch
+        agents:
+          - name: avmts_tagger
+            description: Tags shelf or trend language from the query.
+            allowed_tools: [vector_search]
+            prompt_stub: |
+              You are a shelf-image tagging agent working from text. Tag
+              products and gaps. Call out low-confidence tags. Do not invent SKUs.
+          - name: avmts_planner
+            description: Suggests a planogram change grounded in tags.
+            allowed_tools: []
+            prompt_stub: |
+              You are a planogram suggester. Ground changes in the tagger
+              output. Call out low-confidence tags.
+        graph:
+          entry: tag
+          nodes:
+            - id: tag
+              agent_name: avmts_tagger
+              next: [plan]
+            - id: plan
+              agent_name: avmts_planner
+              next: []
+
+factories:
+  capabilities:
+    - id: gateway
+      prompt: LLM / gateway
+      setting: GATEWAY_PROVIDER
+      backends:
+        - id: litellm
+          status: implemented
+        - id: openai
+          status: implemented
+        - id: bedrock
+          status: implemented
+          extra: aws
+        - id: ollama
+          status: implemented
+        - id: kong
+          status: planned
+    - id: cache
+      prompt: Cache
+      setting: CACHE_BACKEND
+      backends:
+        - id: memory
+          status: implemented
+        - id: redis
+          status: implemented
+        - id: memcached
+          status: implemented
+          extra: cache-memcached
+    - id: vector
+      prompt: Vector store
+      setting: VECTOR_BACKEND
+      backends:
+        - id: memory
+          status: implemented
+        - id: opensearch
+          status: implemented
+          extra: opensearch
+        - id: qdrant
+          status: implemented
+          extra: qdrant
+        - id: pgvector
+          status: planned
+        - id: weaviate
+          status: planned
+    - id: embeddings
+      prompt: Embeddings
+      setting: EMBEDDINGS_BACKEND
+      backends:
+        - id: litellm
+          status: implemented
+        - id: jina
+          status: implemented
+    - id: parser
+      prompt: Document parser
+      setting: PDF_BACKEND
+      backends:
+        - id: docling
+          status: implemented
+          extra: documents
+    - id: guardrails
+      prompt: Content guardrails
+      setting: SECURITY_CONTENT_GUARDRAIL_BACKEND
+      backends:
+        - id: passthrough
+          status: implemented
+        - id: bedrock
+          status: implemented
+          extra: aws
+    - id: eval
+      prompt: Eval
+      setting: EVAL_BACKEND
+      backends:
+        - id: local
+          status: implemented
+        - id: deepeval
+          status: implemented
+          group: eval
+    - id: state
+      prompt: Hot/cold state
+      setting: DB_BACKEND
+      backends:
+        - id: memory
+          status: implemented
+        - id: sqlite
+          status: implemented
+    - id: secrets
+      prompt: Secrets backend
+      setting: SECURITY_SECRETS_BACKEND
+      backends:
+        - id: env
+          status: implemented
+        - id: vault
+          status: planned
+        - id: aws_secrets_manager
+          status: planned
+        - id: sops
+          status: planned
+    - id: observability
+      prompt: Observability
+      backends:
+        - id: langfuse
+          status: implemented
+          group: observability
+        - id: logfire
+          status: implemented
+          group: observability
+    - id: adk
+      prompt: Google ADK
+      setting: ADK_ENABLED
+      backends:
+        - id: memory
+          status: implemented
+        - id: vertex
+          status: planned
+    - id: a2a
+      prompt: A2A
+      setting: A2A_ENABLED
+      backends:
+        - id: sdk
+          status: implemented
+    - id: mcp
+      prompt: MCP
+      backends:
+        - id: stdio
+          status: implemented
+        - id: http
+          status: implemented

@@ -35,7 +35,7 @@ def test_init_dry_run_writes_nothing(tmp_path: Path):
             "--domain",
             "retail",
             "--workflow",
-            "returns",
+            "accr",
             "--yes",
             "--dry-run",
         ],
@@ -46,19 +46,19 @@ def test_init_dry_run_writes_nothing(tmp_path: Path):
 
 
 def test_init_yes_copies_full_tree_and_one_workflow(tmp_path: Path):
-    dest = tmp_path / "hospital-prior-auth"
+    dest = tmp_path / "hcls-epa"
     result = runner.invoke(
         app,
         [
             "init",
             "--name",
-            "hospital-prior-auth",
+            "hcls-epa",
             "--output",
             str(dest),
             "--domain",
             "healthcare",
             "--workflow",
-            "prior_auth",
+            "prior authorization",
             "--gateway",
             "litellm",
             "--cache",
@@ -74,39 +74,40 @@ def test_init_yes_copies_full_tree_and_one_workflow(tmp_path: Path):
     for name in REQUIRED:
         assert (dest / name).is_dir(), name
     assert (dest / "factories" / "cache" / "memcached").is_dir()
-    assert (dest / "factories" / "cache" / "redis").is_dir()
-    wf = dest / "domains" / "healthcare" / "workflows"
-    assert (wf / "prior_auth" / "graph.yaml").exists()
-    assert (wf / "prior_auth" / "agents" / "prior_auth_intake.yaml").exists()
-    assert not (wf / "claims").exists()
+    wf = dest / "domains" / "hcls" / "workflows"
+    assert (wf / "epa" / "graph.yaml").exists()
+    assert (wf / "epa" / "agents" / "epa_intake.yaml").exists()
+    assert not (wf / "ctpm").exists()
     env = (dest / ".env").read_text(encoding="utf-8")
     assert "CACHE_BACKEND=memory" in env
     assert "VECTOR_BACKEND=opensearch" in env
-    assert "VECTOR_OPENSEARCH_URL=http://localhost:9200" in env
-    project = (dest / "config" / "project.yaml").read_text(encoding="utf-8")
-    assert "domain: healthcare" in project
-    assert "workflow: prior_auth" in project
-    assert "template_version:" in project
+    app_yaml = (dest / "config" / "app.yaml").read_text(encoding="utf-8")
+    assert "domain: hcls" in app_yaml
+    assert "workflow: epa" in app_yaml
+    assert "plan: accepted" in app_yaml
+    assert not (dest / "config" / "project.yaml").exists()
     assert (dest / "factory-choices.json").exists()
     assert not (dest / "catalogs").exists()
     assert not (dest / "cli").exists()
     pyproject = (dest / "pyproject.toml").read_text(encoding="utf-8")
-    assert 'name = "hospital-prior-auth"' in pyproject
+    assert 'name = "hcls-epa"' in pyproject
     assert "66degrees-factory" not in pyproject
 
 
 def test_list_domains():
     result = runner.invoke(app, ["list-domains"])
     assert result.exit_code == 0
-    assert "banking" in result.output
-    assert "healthcare" in result.output
+    assert "bfs" in result.output
+    assert "hcls" in result.output
+    assert "retail" in result.output
 
 
-def test_list_workflows_banking():
+def test_list_workflows_bfs_alias():
     result = runner.invoke(app, ["list-workflows", "--domain", "banking"])
     assert result.exit_code == 0
-    assert "kyc" in result.output
-    assert "fraud" in result.output
+    assert "afi" in result.output
+    assert "clu" in result.output
+    assert "rca" in result.output
 
 
 def test_list_factories():
@@ -127,9 +128,9 @@ def test_init_dry_run_qdrant_env(tmp_path: Path):
             "--output",
             str(dest),
             "--domain",
-            "banking",
+            "bfs",
             "--workflow",
-            "kyc",
+            "afi",
             "--vector",
             "qdrant",
             "--yes",
@@ -138,6 +139,60 @@ def test_init_dry_run_qdrant_env(tmp_path: Path):
     )
     assert result.exit_code == 0, result.output
     assert "VECTOR_BACKEND=qdrant" in result.output
+
+
+def test_init_yes_writes_recommended_stack(tmp_path: Path):
+    dest = tmp_path / "demo-afi"
+    result = runner.invoke(
+        app,
+        [
+            "init",
+            "--name",
+            "demo-afi",
+            "--output",
+            str(dest),
+            "--domain",
+            "bfs",
+            "--workflow",
+            "afi",
+            "--yes",
+        ],
+    )
+    assert result.exit_code == 0, result.output
+    app_yaml = (dest / "config" / "app.yaml").read_text(encoding="utf-8")
+    assert "domain: bfs" in app_yaml
+    assert "workflow: afi" in app_yaml
+    assert "backend: redis" in app_yaml
+    env = (dest / ".env").read_text(encoding="utf-8")
+    assert "CACHE_BACKEND=redis" in env
+    assert "GATEWAY_PROVIDER=litellm" in env
+
+
+def test_from_choices_app_yaml(tmp_path: Path):
+    src_yaml = tmp_path / "app.yaml"
+    src_yaml.write_text(
+        "project:\n  domain: bfs\n  workflow: afi\n  plan: accepted\n"
+        "cache:\n  backend: memory\n"
+        "vector:\n  backend: memory\n",
+        encoding="utf-8",
+    )
+    dest = tmp_path / "replay"
+    result = runner.invoke(
+        app,
+        [
+            "init",
+            "--from-choices",
+            str(src_yaml),
+            "--name",
+            "replay",
+            "--output",
+            str(dest),
+            "--dry-run",
+        ],
+    )
+    assert result.exit_code == 0, result.output
+    assert "bfs" in result.output
+    assert "afi" in result.output
 
 
 def test_copy_skips_site_packages_neighbors(tmp_path: Path):

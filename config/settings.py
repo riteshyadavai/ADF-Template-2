@@ -1,5 +1,6 @@
 """Centralized configuration for all factory components."""
 
+import os
 from enum import StrEnum
 from functools import lru_cache
 from pathlib import Path
@@ -10,7 +11,6 @@ from pydantic import Field, SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
-CONFIG_DIR = Path(__file__).resolve().parent
 
 
 class Environment(StrEnum):
@@ -213,23 +213,108 @@ class Settings(BaseSettings):
     prompt_version: str = Field(default="latest", validation_alias="PROMPT_VERSION")
 
 
-def load_environment_overlay(env: Environment) -> dict[str, Any]:
-    path = CONFIG_DIR / "environments" / f"{env.value}.yaml"
+def _load_yaml(path: Path) -> dict[str, Any]:
     if not path.exists():
         return {}
     with path.open(encoding="utf-8") as fh:
-        return yaml.safe_load(fh) or {}
+        raw = yaml.safe_load(fh) or {}
+    return raw if isinstance(raw, dict) else {}
+
+
+def load_app_yaml(root: Path | None = None) -> dict[str, Any]:
+    base = root or PROJECT_ROOT
+    return _normalize_app_yaml(_load_yaml(base / "config" / "app.yaml"))
+
+
+def _normalize_app_yaml(raw: dict[str, Any]) -> dict[str, Any]:
+    """Map app.yaml keys onto Settings field names."""
+    out: dict[str, Any] = {}
+    if "environment" in raw and isinstance(raw["environment"], str):
+        out["environment"] = raw["environment"]
+    if "gateway" in raw:
+        out["gateway"] = raw["gateway"]
+    if "cache" in raw:
+        out["cache"] = raw["cache"]
+    if "database" in raw:
+        out["database"] = raw["database"]
+    if "pdf" in raw:
+        out["pdf"] = raw["pdf"]
+    if "eval" in raw:
+        out["eval"] = raw["eval"]
+    if "adk" in raw:
+        out["adk"] = raw["adk"]
+    if "a2a" in raw:
+        out["a2a"] = raw["a2a"]
+    if "tenant" in raw:
+        out["tenant"] = raw["tenant"]
+    if "security" in raw:
+        out["security"] = raw["security"]
+    vector = raw.get("vector")
+    if isinstance(vector, dict):
+        vs = dict(vector)
+        if "embeddings_backend" in vs and "embeddings_backend" not in vs:
+            pass
+        out["vector_store"] = vs
+    obs = raw.get("observability")
+    if isinstance(obs, dict):
+        if "langfuse" in obs:
+            out.setdefault("langfuse", {})["enabled"] = bool(obs["langfuse"])
+        if "logfire" in obs:
+            out.setdefault("logfire", {})["enabled"] = bool(obs["logfire"])
+    return out
+
+
+def load_environment_overlay(env: Environment, root: Path | None = None) -> dict[str, Any]:
+    base = root or PROJECT_ROOT
+    return _load_yaml(base / "config" / "environments" / f"{env.value}.yaml")
+
+
+_ENV_NESTED_PREFIXES = (
+    ("observability", "OBS_"),
+    ("langfuse", "LANGFUSE_"),
+    ("logfire", "LOGFIRE_"),
+    ("gateway", "GATEWAY_"),
+    ("bedrock", "BEDROCK_"),
+    ("ollama", "OLLAMA_"),
+    ("cache", "CACHE_"),
+    ("database", "DB_"),
+    ("vector_store", "VECTOR_"),
+    ("pdf", "PDF_"),
+    ("adk", "ADK_"),
+    ("a2a", "A2A_"),
+    ("eval", "EVAL_"),
+    ("security", "SECURITY_"),
+    ("tenant", "TENANT_"),
+)
+
+
+def _environment_from_sources(app_overlay: dict[str, Any]) -> Environment:
+    raw = os.environ.get("ENVIRONMENT") or app_overlay.get("environment") or "local"
+    if isinstance(raw, Environment):
+        return raw
+    return Environment(str(raw).lower())
 
 
 @lru_cache
 def get_settings() -> Settings:
-    settings = Settings()
-    overlay = load_environment_overlay(settings.environment)
-    if overlay:
-        merged = settings.model_dump()
-        _deep_merge(merged, overlay)
-        settings = Settings.model_validate(merged)
-    return settings
+    defaults = Settings.model_construct().model_dump()
+    app_overlay = load_app_yaml()
+    if app_overlay:
+        _deep_merge(defaults, app_overlay)
+    env_name = _environment_from_sources(app_overlay)
+    defaults["environment"] = env_name
+    env_overlay = load_environment_overlay(env_name)
+    if env_overlay:
+        _deep_merge(defaults, env_overlay)
+    yaml_settings = Settings.model_validate(defaults)
+    env_settings = Settings()
+    merged = yaml_settings.model_dump()
+    for field, prefix in _ENV_NESTED_PREFIXES:
+        if any(key.startswith(prefix) for key in os.environ):
+            merged[field] = getattr(env_settings, field).model_dump()
+    if "ENVIRONMENT" in os.environ:
+        merged["environment"] = env_settings.environment
+    return Settings.model_validate(merged)
 
 
 def _deep_merge(base: dict, overlay: dict) -> None:

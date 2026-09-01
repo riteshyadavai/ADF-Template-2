@@ -1,4 +1,4 @@
-"""Optional project.yaml written by `66degrees-factory init`."""
+"""Project block from config/app.yaml (written by init)."""
 
 from __future__ import annotations
 
@@ -13,21 +13,34 @@ from config.settings import PROJECT_ROOT
 class ProjectConfig(BaseModel):
     domain: str | None = None
     workflow: str | None = None
+    plan: str | None = None
     template_package: str = "66degrees-factory"
     template_version: str | None = None
 
 
-def project_yaml_path(root: Path | None = None) -> Path:
-    return (root or PROJECT_ROOT) / "config" / "project.yaml"
+def app_yaml_path(root: Path | None = None) -> Path:
+    return (root or PROJECT_ROOT) / "config" / "app.yaml"
 
 
 def load_project_config(root: Path | None = None) -> ProjectConfig | None:
-    path = project_yaml_path(root)
+    path = app_yaml_path(root)
     if not path.exists():
         return None
     with path.open(encoding="utf-8") as fh:
         raw = yaml.safe_load(fh) or {}
-    return ProjectConfig.model_validate(raw)
+    if not isinstance(raw, dict):
+        return None
+    project = raw.get("project") or {}
+    template = raw.get("template") or {}
+    if not project.get("domain") and not project.get("workflow"):
+        return None
+    return ProjectConfig(
+        domain=project.get("domain"),
+        workflow=project.get("workflow"),
+        plan=project.get("plan"),
+        template_package=template.get("package") or "66degrees-factory",
+        template_version=template.get("version"),
+    )
 
 
 def workflow_dir(root: Path, config: ProjectConfig) -> Path | None:
@@ -35,13 +48,3 @@ def workflow_dir(root: Path, config: ProjectConfig) -> Path | None:
         return None
     path = root / "domains" / config.domain / "workflows" / config.workflow
     return path if path.is_dir() else None
-
-
-def dump_project_config(config: ProjectConfig) -> str:
-    payload = {
-        "domain": config.domain,
-        "workflow": config.workflow,
-        "template_package": config.template_package,
-        "template_version": config.template_version,
-    }
-    return yaml.safe_dump(payload, sort_keys=False)

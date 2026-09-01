@@ -1,12 +1,12 @@
-"""Load catalogs/factories.yaml for CLI prompts and extras."""
+"""Load factory capabilities from catalogs/catalog.yaml."""
 
 from __future__ import annotations
 
 from pathlib import Path
 
-import yaml
 from pydantic import BaseModel, Field
 
+from cli.catalog import load_raw_catalog
 from cli.template_root import template_root
 
 
@@ -29,14 +29,13 @@ class FactoryCatalog(BaseModel):
 
 
 def factory_catalog_path(root: Path | None = None) -> Path:
-    return (root or template_root()) / "catalogs" / "factories.yaml"
+    return (root or template_root()) / "catalogs" / "catalog.yaml"
 
 
 def load_factory_catalog(root: Path | None = None) -> FactoryCatalog:
-    path = factory_catalog_path(root)
-    with path.open(encoding="utf-8") as fh:
-        raw = yaml.safe_load(fh) or {}
-    return FactoryCatalog.model_validate(raw)
+    raw = load_raw_catalog(root)
+    factories = raw.get("factories") or {}
+    return FactoryCatalog.model_validate(factories)
 
 
 def get_capability(capability_id: str, root: Path | None = None) -> FactoryCapabilitySpec:
@@ -61,13 +60,29 @@ def get_backend(
     raise ValueError(f"Unknown backend '{backend_id}' for {capability_id}. Known: {known}")
 
 
-def labeled_backend_choices(capability_id: str, root: Path | None = None) -> list[str]:
+def labeled_backend_choices(
+    capability_id: str,
+    root: Path | None = None,
+    *,
+    include_planned: bool = False,
+    current: str | None = None,
+) -> list[str]:
     cap = get_capability(capability_id, root)
-    return [f"{b.id} ({b.status})" for b in cap.backends]
+    backends = cap.backends
+    if not include_planned:
+        backends = [b for b in backends if b.status != "planned"]
+    labels: list[str] = []
+    for backend in backends:
+        mark = "● " if current and backend.id == current else "  "
+        labels.append(f"{mark}{backend.id}  —  {backend.id} ({backend.status})")
+    return labels
 
 
 def backend_id_from_label(label: str) -> str:
-    return label.split(" (", 1)[0]
+    text = label.lstrip("● ").strip()
+    if "  —  " in text:
+        return text.split("  —  ", 1)[0].strip()
+    return text.split(" (", 1)[0].strip()
 
 
 def assert_backend_allowed(

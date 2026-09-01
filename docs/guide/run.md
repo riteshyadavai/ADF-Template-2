@@ -5,7 +5,7 @@ Minimum for Gemini via LiteLLM: `GOOGLE_API_KEY` in `.env`. Local overlay skips 
 ## HTTP API
 
 ```bash
-cd /Users/ritesh/Desktop/demo-kyc   # or this template repo
+cd ~/Desktop/demo-afi   # or this template repo
 uv sync
 # edit .env — minimum: GOOGLE_API_KEY for Gemini via LiteLLM
 make dev

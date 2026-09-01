@@ -5,10 +5,9 @@ from __future__ import annotations
 import shutil
 from pathlib import Path
 
-from cli.catalog import materialize_workflow
+from cli.catalog import CatalogWorkflow, materialize_workflow
 from cli.choices import FactoryChoices
 from cli.template_root import template_root
-from config.project_config import ProjectConfig, dump_project_config
 
 IGNORE_DIR_NAMES = {
     ".git",
@@ -137,24 +136,7 @@ def render_project_files(dest: Path, choices: FactoryChoices) -> None:
             readme.write_text(header + body, encoding="utf-8")
 
     (dest / ".env").write_text(choices.render_env(), encoding="utf-8")
-
-    overlay = dest / "config" / "environments" / f"{choices.environment}.yaml"
-    if overlay.exists() and choices.environment == "local":
-        text = overlay.read_text(encoding="utf-8")
-        if "cache:\n  backend:" in text:
-            text = text.replace(
-                "cache:\n  backend: memory",
-                f"cache:\n  backend: {choices.cache}",
-            )
-            overlay.write_text(text, encoding="utf-8")
-
-    project = ProjectConfig(
-        domain=choices.domain,
-        workflow=choices.workflow,
-        template_package=choices.template_package,
-        template_version=choices.template_version,
-    )
-    (dest / "config" / "project.yaml").write_text(dump_project_config(project), encoding="utf-8")
+    (dest / "config" / "app.yaml").write_text(choices.render_app_yaml(), encoding="utf-8")
     choices.write_choices_file(dest)
 
 
@@ -164,7 +146,7 @@ def generate_project(choices: FactoryChoices, *, dry_run: bool = False) -> list[
     files = [str(p.relative_to(src)) for p in planned_copy_paths(src)]
     workflow_rel = f"domains/{choices.domain}/workflows/{choices.workflow}/"
     if dry_run:
-        return [*files, workflow_rel, ".env", "config/project.yaml", "factory-choices.json"]
+        return [*files, workflow_rel, ".env", "config/app.yaml", "factory-choices.json"]
 
     if dest.exists() and any(dest.iterdir()) and dest.resolve() != src.resolve():
         raise FileExistsError(f"Destination is not empty: {dest} (pass --force to overwrite)")
@@ -175,12 +157,16 @@ def generate_project(choices: FactoryChoices, *, dry_run: bool = False) -> list[
     copy_template(src, dest)
     assert_required_dirs(dest)
     render_project_files(dest, choices)
+    plan = None
+    if choices.workflow_plan:
+        plan = CatalogWorkflow.model_validate(choices.workflow_plan)
     materialize_workflow(
         dest,
         choices.domain,
         choices.workflow,
         mcp_examples=choices.mcp_examples,
         catalog_root=src,
+        workflow=plan,
     )
     return [*files, workflow_rel]
 

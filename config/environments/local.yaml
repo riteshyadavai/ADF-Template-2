@@ -3,8 +3,6 @@ observability:
   log_level: DEBUG
 gateway:
   daily_budget_usd: 10.0
-cache:
-  backend: memory
 database:
   hot_url: sqlite+aiosqlite:///./data/local_hot.db
   cold_url: sqlite+aiosqlite:///./data/local_cold.db

@@ -11,7 +11,7 @@ The **CLI package** lives in Artifact Registry. This documentation site is a dif
 | Format | Python |
 | Location | `us-central1` |
 | Package | `multi-agent-factory` |
-| Version | `0.2.2` |
+| Version | `0.2.5` |
 | Upload URL | `https://us-central1-python.pkg.dev/ai-ml-team-sandbox/adf-factory-pypi/` |
 | Install index | `https://us-central1-python.pkg.dev/ai-ml-team-sandbox/adf-factory-pypi/simple/` |
 
@@ -52,7 +52,7 @@ uv build --wheel
 uvx --with keyrings.google-artifactregistry-auth --with twine \
   twine upload --non-interactive \
   --repository-url https://us-central1-python.pkg.dev/ai-ml-team-sandbox/adf-factory-pypi/ \
-  dist/multi_agent_factory-0.2.2-py3-none-any.whl
+  dist/multi_agent_factory-0.2.5-py3-none-any.whl
 ```
 
 Verify:
@@ -74,13 +74,13 @@ export TOKEN=$(gcloud auth print-access-token)
 export AR_SIMPLE="https://oauth2accesstoken:${TOKEN}@us-central1-python.pkg.dev/ai-ml-team-sandbox/adf-factory-pypi/simple/"
 
 uv tool install multi-agent-factory --extra-index-url "$AR_SIMPLE"
-66degrees-factory init --output ~/Desktop/demo-kyc
+66degrees-factory init --output ~/Desktop/demo-afi
 ```
 
 ```bash
 uvx --extra-index-url "$AR_SIMPLE" \
   --from multi-agent-factory \
-  66degrees-factory init --output ~/Desktop/demo-kyc
+  66degrees-factory init --output ~/Desktop/demo-afi
 ```
 
 IAM (only if a teammate cannot install): grant `roles/artifactregistry.reader` on `adf-factory-pypi`. Publishers need `roles/artifactregistry.writer`.
@@ -98,4 +98,4 @@ uv publish --publish-url http://127.0.0.1:8080/ --username unused --password unu
 
 ## How updates work
 
-Publishing a new version updates the **generator**. Existing generated projects keep the `factories/` copy from init time (`template_version` in `config/project.yaml`). Re-init into a new folder (or a future `upgrade --factories`) to take a newer snapshot.
+Publishing a new version updates the **generator**. Existing generated projects keep the `factories/` copy from init time (`template.version` in `config/app.yaml`). Re-init into a new folder to take a newer snapshot.

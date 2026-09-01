@@ -1,61 +1,51 @@
 # Init a project
 
-One output directory = **one domain + one workflow**. KYC and fraud are two `init` runs.
+One output directory = **one domain + one workflow**. `bfs/afi` and `bfs/clu` are two `init` runs.
+
+Interactive `init` shows a **predefined plan** (agents + graph). Accept it, or customize agents/HITL and then configure backends.
 
 !!! note "Write set"
-    `.env`, `config/project.yaml`, `factory-choices.json`, `pyproject.toml` name, `domains/<domain>/workflows/<workflow>/`. Sibling workflows are not created. Unused factory folders are not deleted.
+    `.env` (secrets), `config/app.yaml` (runtime knobs), `factory-choices.json`, `pyproject.toml` name, `domains/<domain>/workflows/<workflow>/`.
 
 !!! danger "Destructive `--force`"
     `--force` **deletes** a non-empty destination, then recopies. `--dry-run` writes nothing.
 
-## Interactive on Desktop
+## Interactive
+
+From an **empty folder** you already created, init writes **here** (project name = folder name):
 
 ```bash
-# after uv tool install --editable .  (or uvx from GCP)
-export PATH="$HOME/.local/bin:$PATH"
-66degrees-factory init --output /Users/ritesh/Desktop/demo-kyc
+mkdir ~/Desktop/demo-afi && cd ~/Desktop/demo-afi
+66degrees-factory init
 ```
 
-Or from the repo without a global install:
+From this factory repo, init refuses `.` and defaults to `~/Desktop/<name>`:
 
 ```bash
-cd /Users/ritesh/Desktop/multi-agent-factory
-uv run 66degrees-factory init --output /Users/ritesh/Desktop/demo-kyc
+uv run 66degrees-factory init
 ```
 
-When asked for **output directory**, use the Desktop path (empty / new folder). Do **not** use this template repo as the output.
+Or pass `--output` explicitly. Do **not** use this template repo as the destination.
+
+Each workflow has a catalog **platform stack** (LLM / cache / vector). Accept the plan to keep it, or choose **Change stack** (current backends are pre-selected).
 
 ## What gets written
 
-The destination is the **runtime app** (`app/`, `agents/`, `factories/`, `tests/`, `docs/`, …). The generator stays in the installed CLI: **`catalogs/` and `cli/` are not copied**.
-
-Then init writes:
+Runtime app snapshot (`app/`, `agents/`, `factories/`, `tests/`, `docs/`). **Not copied:** `catalogs/`, `cli/`.
 
 | Path | Purpose |
 |------|---------|
-| `.env` | All factory settings; secrets are `CHANGE_ME` |
-| `config/project.yaml` | `domain`, `workflow`, `template_package`, `template_version` |
-| `factory-choices.json` | Record of wizard answers (optional; `--from-choices` can replay it) |
-| `pyproject.toml` | `name` set to `--name` |
-| `domains/<domain>/workflows/<workflow>/` | `graph.yaml`, `agents/*.yaml`, `prompts/*.md`, optional `mcp.yaml` |
+| `.env` | Secrets (`CHANGE_ME`) |
+| `config/app.yaml` | Domain, workflow, plan mode, backends |
+| `factory-choices.json` | Replay (`--from-choices`) |
+| `domains/<domain>/workflows/<workflow>/` | Manifests, prompts, `graph.yaml` |
 
-Sibling workflows are **not** created (e.g. `kyc` only, not `fraud`).
+`--yes` accepts the catalog plan and `recommended_stack` unless you pass factory flags.
 
-At runtime, `Platform` loads that workflow if `config/project.yaml` exists. This template repo (no `domains/` project file) still uses the default `respond` graph.
+`Platform` loads that workflow when `config/app.yaml` has `project.domain` and `project.workflow`. This checkout without a project block uses the default `respond` graph.
 
 ## After generate
 
 ```bash
-cd /Users/ritesh/Desktop/demo-kyc
-uv sync
-# set GOOGLE_API_KEY and other CHANGE_ME keys in .env
-make dev
+cd ~/Desktop/demo-afi && uv sync && make dev
 ```
-
-The CLI also prints the exact `uv sync --extra …` / `--group …` lines for what you picked.
-
-## Destination rules
-
-- Non-empty destination → error unless `--force` (deletes the folder, then recopies).
-- Output path equal to the template root → refused.
-- `--dry-run` never writes.

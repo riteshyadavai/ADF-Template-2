@@ -1,6 +1,6 @@
 # 66degrees Factory
 
-Package **`multi-agent-factory` 0.2.2**. Console command **`66degrees-factory`** (alias **`factory`**).
+Package **`multi-agent-factory` 0.2.5**. Console command **`66degrees-factory`** (alias **`factory`**).
 
 This repo is the **generator** and the default runtime template. `init` writes a **developer agent app** (one domain + one workflow). It does **not** copy `catalogs/` or `cli/` into that app.
 
@@ -52,36 +52,38 @@ Needs `roles/artifactregistry.reader` on repo `adf-factory-pypi` in project `ai-
 
 ## Generate a project
 
-Output must be a **new empty directory**. Do not init into this template repo.
+From an empty folder, init writes **here**. Do not init into this template repo.
 
 ```bash
-66degrees-factory init --output ~/Desktop/demo-kyc
+mkdir ~/Desktop/demo-afi && cd ~/Desktop/demo-afi
+66degrees-factory init
 ```
 
 Non-interactive:
 
 ```bash
 66degrees-factory init \
-  --name demo-kyc \
-  --output ~/Desktop/demo-kyc \
-  --domain banking \
-  --workflow kyc \
+  --name demo-afi \
+  --output ~/Desktop/demo-afi \
+  --domain bfs \
+  --workflow afi \
   --yes
 ```
 
 ```bash
 66degrees-factory list-domains
-66degrees-factory list-workflows --domain banking
+66degrees-factory list-workflows --domain bfs
 66degrees-factory list-factories
-66degrees-factory init --name demo --domain retail --workflow returns --yes --dry-run
+66degrees-factory init --name demo --domain retail --workflow accr --yes --dry-run
 ```
 
 | Domain | Workflows |
 |--------|-----------|
-| `banking` | `kyc`, `fraud`, `loan_origination`, `compliance` |
-| `healthcare` | `prior_auth`, `claims`, `clinical_summary` |
-| `insurance` | `fnol`, `policy_qa` |
-| `retail` | `returns`, `catalog_qa` |
+| `bfs` | `afi`, `clu`, `rca` |
+| `hcls` | `epa`, `ctpm`, `addw` |
+| `retail` | `accr`, `dcap`, `avmts` |
+
+Interactive `init` previews the catalog plan (agents + graph). Accept it, or customize agents/HITL and then configure backends.
 
 ### What `init` writes
 
@@ -89,7 +91,8 @@ Non-interactive:
 |------------|---------|
 | `app/`, `agents/`, `factories/`, `config/`, `shared/` | Runtime |
 | `domains/<domain>/workflows/<workflow>/` | That workflow only |
-| `.env`, `config/project.yaml` | Backends and domain/workflow |
+| `.env` | Secrets |
+| `config/app.yaml` | Domain, workflow, backends |
 | `factory-choices.json` | Wizard record (`--from-choices`) |
 
 **Not copied:** `catalogs/`, `cli/`, site-packages (`aiohttp`, `*.dist-info`). Unused factory **backends** stay under `factories/` so env can switch later.
@@ -97,7 +100,7 @@ Non-interactive:
 Then:
 
 ```bash
-cd ~/Desktop/demo-kyc
+cd ~/Desktop/demo-afi
 uv sync
 # set GOOGLE_API_KEY and other CHANGE_ME keys in .env
 make dev    # http://localhost:8000/api/v1/docs
@@ -146,7 +149,7 @@ uv run python examples/multi_agent.py
 | `domains/` | Empty until you init elsewhere | One domain + one workflow |
 | Console scripts | `66degrees-factory`, `factory` | None (use `make dev`) |
 
-`Platform` loads `domains/…` when `config/project.yaml` exists. This checkout without that file uses the default `respond` graph.
+`Platform` loads `domains/…` when `config/app.yaml` has `project.domain` and `project.workflow`. This checkout without that block uses the default `respond` graph.
 
 ---
 
@@ -154,7 +157,7 @@ uv run python examples/multi_agent.py
 
 ```text
 cli/          init, list-*, serve
-catalogs/     domains and factory backends for the wizard
+catalogs/     catalog.yaml (domains, workflows, factory backends) for the wizard
 config/       YAML + pydantic settings
 app/          FastAPI
 agents/       run loop, manifests, prompts
@@ -199,7 +202,7 @@ curl -s -X POST http://localhost:8000/api/v1/agents/run \
 
 ## Factories
 
-Runtime selection is env. `init` only writes `.env`.
+Runtime selection is `config/app.yaml` then env (env wins). `init` writes both.
 
 ```python
 from factories.registry import get_factory_registry
@@ -253,4 +256,4 @@ make docs-deploy   # Cloud Run adf-factory-docs (ai-ml-team-sandbox only)
 - [Run](docs/guide/run.md)
 - [Publish the package](docs/guide/publish-gcp.md)
 
-New CLI versions update **new** `init` snapshots (`template_version` in `config/project.yaml`). Existing apps keep the factories they were generated with. Pin `multi-agent-factory==0.2.2` in a team runbook.
+New CLI versions update **new** `init` snapshots (`template.version` in `config/app.yaml`). Existing apps keep the factories they were generated with. Pin `multi-agent-factory==0.2.5` in a team runbook.

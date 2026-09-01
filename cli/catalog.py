@@ -1,4 +1,4 @@
-"""Load and validate domain/workflow catalogs."""
+"""Load catalogs/catalog.yaml for domains, workflows, and materialize."""
 
 from __future__ import annotations
 
@@ -8,6 +8,12 @@ import yaml
 from pydantic import BaseModel, Field, model_validator
 
 from cli.template_root import template_root
+
+
+class RecommendedStack(BaseModel):
+    gateway: str = "litellm"
+    cache: str = "memory"
+    vector: str = "memory"
 
 
 class CatalogAgent(BaseModel):
@@ -43,12 +49,17 @@ class CatalogGraph(BaseModel):
 class CatalogWorkflow(BaseModel):
     id: str
     name: str
-    description: str
+    summary: str = ""
+    description: str = ""
+    aliases: list[str] = Field(default_factory=list)
+    recommended_stack: RecommendedStack = Field(default_factory=RecommendedStack)
     agents: list[CatalogAgent]
     graph: CatalogGraph
 
     @model_validator(mode="after")
     def agents_present(self) -> CatalogWorkflow:
+        if not self.description and self.summary:
+            self.description = self.summary
         if not self.agents:
             raise ValueError(f"workflow '{self.id}' needs at least one agent")
         names = [a.name for a in self.agents]
@@ -61,6 +72,7 @@ class CatalogDomain(BaseModel):
     id: str
     name: str
     description: str = ""
+    aliases: list[str] = Field(default_factory=list)
     workflows: list[CatalogWorkflow]
 
     @model_validator(mode="after")
@@ -73,39 +85,97 @@ class CatalogDomain(BaseModel):
         return self
 
 
-def catalogs_dir(root: Path | None = None) -> Path:
-    return (root or template_root()) / "catalogs" / "domains"
+def catalog_path(root: Path | None = None) -> Path:
+    return (root or template_root()) / "catalogs" / "catalog.yaml"
+
+
+def load_raw_catalog(root: Path | None = None) -> dict:
+    path = catalog_path(root)
+    with path.open(encoding="utf-8") as fh:
+        raw = yaml.safe_load(fh) or {}
+    if not isinstance(raw, dict) or "domains" not in raw:
+        raise ValueError(f"Invalid catalog: {path}")
+    return raw
 
 
 def load_domains(root: Path | None = None) -> list[CatalogDomain]:
-    directory = catalogs_dir(root)
-    if not directory.is_dir():
-        raise FileNotFoundError(f"Catalog directory missing: {directory}")
+    raw = load_raw_catalog(root)
     domains: list[CatalogDomain] = []
-    for path in sorted(directory.glob("*.yaml")):
-        with path.open(encoding="utf-8") as fh:
-            raw = yaml.safe_load(fh) or {}
-        domains.append(CatalogDomain.model_validate(raw))
+    for domain_id, body in (raw.get("domains") or {}).items():
+        wf_map = body.get("workflows") or {}
+        workflows = [
+            CatalogWorkflow(id=wf_id, **wf_body)
+            for wf_id, wf_body in wf_map.items()
+        ]
+        domains.append(
+            CatalogDomain(
+                id=domain_id,
+                name=body.get("name", domain_id),
+                description=body.get("description", ""),
+                aliases=list(body.get("aliases") or []),
+                workflows=workflows,
+            )
+        )
     if not domains:
-        raise ValueError(f"No domain catalogs in {directory}")
+        raise ValueError(f"No domains in {catalog_path(root)}")
     return domains
 
 
-def get_domain(domain_id: str, root: Path | None = None) -> CatalogDomain:
+def resolve_domain_id(token: str, root: Path | None = None) -> str:
+    needle = token.strip().lower()
     for domain in load_domains(root):
-        if domain.id == domain_id:
-            return domain
+        aliases = {domain.id.lower(), *(a.lower() for a in domain.aliases)}
+        if needle in aliases:
+            return domain.id
     known = ", ".join(d.id for d in load_domains(root))
-    raise ValueError(f"Unknown domain '{domain_id}'. Known: {known}")
+    raise ValueError(f"Unknown domain '{token}'. Known: {known}")
+
+
+def resolve_workflow_id(domain_id: str, token: str, root: Path | None = None) -> str:
+    domain = get_domain(domain_id, root)
+    needle = token.strip().lower()
+    for workflow in domain.workflows:
+        aliases = {workflow.id.lower(), *(a.lower() for a in workflow.aliases)}
+        if needle in aliases:
+            return workflow.id
+    known = ", ".join(w.id for w in domain.workflows)
+    raise ValueError(f"Unknown workflow '{token}' in {domain.id}. Known: {known}")
+
+
+def get_domain(domain_id: str, root: Path | None = None) -> CatalogDomain:
+    resolved = resolve_domain_id(domain_id, root)
+    for domain in load_domains(root):
+        if domain.id == resolved:
+            return domain
+    raise ValueError(f"Unknown domain '{domain_id}'")
 
 
 def get_workflow(domain_id: str, workflow_id: str, root: Path | None = None) -> CatalogWorkflow:
     domain = get_domain(domain_id, root)
+    resolved = resolve_workflow_id(domain.id, workflow_id, root)
     for workflow in domain.workflows:
-        if workflow.id == workflow_id:
+        if workflow.id == resolved:
             return workflow
-    known = ", ".join(w.id for w in domain.workflows)
-    raise ValueError(f"Unknown workflow '{workflow_id}' in {domain_id}. Known: {known}")
+    raise ValueError(f"Unknown workflow '{workflow_id}' in {domain.id}")
+
+
+def graph_chain(workflow: CatalogWorkflow) -> str:
+    by_id = {n.id: n for n in workflow.graph.nodes}
+    parts: list[str] = []
+    seen: set[str] = set()
+    current = workflow.graph.entry
+    while current and current not in seen:
+        seen.add(current)
+        node = by_id.get(current)
+        if node is None:
+            break
+        label = current
+        if node.requires_hitl:
+            label = f"{current} (HITL)"
+        parts.append(label)
+        nxt = node.next
+        current = nxt[0] if nxt else ""
+    return " → ".join(parts) if parts else workflow.graph.entry
 
 
 def materialize_workflow(
@@ -115,16 +185,18 @@ def materialize_workflow(
     *,
     mcp_examples: bool,
     catalog_root: Path | None = None,
+    workflow: CatalogWorkflow | None = None,
 ) -> Path:
-    workflow = get_workflow(domain_id, workflow_id, catalog_root)
-    base = dest_root / "domains" / domain_id / "workflows" / workflow_id
+    domain = get_domain(domain_id, catalog_root)
+    plan = workflow or get_workflow(domain.id, workflow_id, catalog_root)
+    base = dest_root / "domains" / domain.id / "workflows" / plan.id
     agents_dir = base / "agents"
     prompts_dir = base / "prompts"
     agents_dir.mkdir(parents=True, exist_ok=True)
     prompts_dir.mkdir(parents=True, exist_ok=True)
 
     graph_payload = {
-        "entry": workflow.graph.entry,
+        "entry": plan.graph.entry,
         "nodes": [
             {
                 "id": node.id,
@@ -132,7 +204,7 @@ def materialize_workflow(
                 "requires_hitl": node.requires_hitl,
                 "next": node.next,
             }
-            for node in workflow.graph.nodes
+            for node in plan.graph.nodes
         ],
     }
     (base / "graph.yaml").write_text(
@@ -140,7 +212,7 @@ def materialize_workflow(
         encoding="utf-8",
     )
 
-    for agent in workflow.agents:
+    for agent in plan.agents:
         manifest = {
             "name": agent.name,
             "version": agent.version,

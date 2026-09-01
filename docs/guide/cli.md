@@ -36,7 +36,7 @@ factory --help
 
 ## `list-domains`
 
-Print catalog domain ids (`catalogs/domains/*.yaml`).
+Print domains from `catalogs/catalog.yaml` (`id`, name, aliases).
 
 ```bash
 66degrees-factory list-domains
@@ -44,10 +44,9 @@ Print catalog domain ids (`catalogs/domains/*.yaml`).
 
 | Domain | Workflows |
 |--------|-----------|
-| `banking` | `kyc`, `fraud`, `loan_origination`, `compliance` |
-| `healthcare` | `prior_auth`, `claims`, `clinical_summary` |
-| `insurance` | `fnol`, `policy_qa` |
-| `retail` | `returns`, `catalog_qa` |
+| `bfs` | `afi`, `clu`, `rca` |
+| `hcls` | `epa`, `ctpm`, `addw` |
+| `retail` | `accr`, `dcap`, `avmts` |
 
 ---
 
@@ -56,20 +55,20 @@ Print catalog domain ids (`catalogs/domains/*.yaml`).
 List workflows for **one** domain.
 
 ```bash
-66degrees-factory list-workflows --domain banking
+66degrees-factory list-workflows --domain bfs
 ```
 
 | Flag | Required | Description |
 |------|----------|-------------|
-| `--domain` | yes | Catalog domain id |
+| `--domain` | yes | Catalog domain id or alias (`banking` → `bfs`) |
 
-Prints `workflow_id` and display name. Example for `--domain banking`: `kyc`, `fraud`, `loan_origination`, `compliance`.
+Prints `workflow_id` and display name. Example for `--domain bfs`: `afi`, `clu`, `rca`.
 
 ---
 
 ## `list-factories`
 
-Print capabilities and backends from `catalogs/factories.yaml` (status: `implemented` / `stub` / `planned`).
+Print capabilities and backends from `catalogs/catalog.yaml` (`implemented` / `planned`).
 
 ```bash
 66degrees-factory list-factories
@@ -84,38 +83,36 @@ Print capabilities and backends from `catalogs/factories.yaml` (status: `impleme
 
 ## `init`
 
-Create a **new directory** that is a full copy of this template plus **one** domain and **one** workflow. Factory answers write `.env` and `config/project.yaml`. Unused factory folders are **not** deleted.
+Create a **new directory** (or fill an **empty cwd**) that is a runtime copy of this template plus **one** domain and **one** workflow. Writes `.env` and `config/app.yaml`. Unused factory folders stay on disk. `catalogs/` and `cli/` are not copied.
 
-### Interactive (cookiecutter-style)
+### Interactive
 
 ```bash
+mkdir ~/Desktop/demo-afi && cd ~/Desktop/demo-afi
 66degrees-factory init
 ```
 
-Prompts (arrow keys / Enter):
+1. Location — empty folder: confirm this folder; factory repo: refuse `.`; nonempty: subfolder  
+2. Domain (`bfs`, `hcls`, `retail`)  
+3. Workflow  
+4. Plan card: graph, **platform stack**, agents + agent tools  
+5. Accept (keep catalog stack), **Change stack** (current backends pre-selected), or Customize agents  
+6. Summary → Create project?
 
-1. Project name  
-2. Output directory (use an empty path such as `/Users/ritesh/Desktop/demo-kyc`)  
-3. Package slug  
-4. Domain  
-5. Workflow (only that domain’s list)  
-6. Every factory: gateway, default model, cache (+ URL), vector (+ URL), embeddings, parser, guardrails, eval, Langfuse, Logfire, state, ADK, A2A, MCP examples, secrets, tenant isolation, environment  
-7. Summary table → **Create project?**
+`--yes` always accepts the catalog plan and that workflow’s `recommended_stack`.
 
-Follow-up URL prompts appear only for Redis, memcached, OpenSearch, Qdrant, Bedrock, Ollama.
-
-`init` **refuses** to generate into the template source tree. If `config/project.yaml` already exists in the current repo, it warns that `init` creates a **new** folder.
+`init` refuses the template source tree. If `config/app.yaml` already has a project block, it warns that `init` creates a **new** folder.
 
 ### Non-interactive
 
-`--yes` requires `--name`, `--domain`, and `--workflow`.
+`--yes` requires `--domain` and `--workflow`. `--name` is required unless the current directory is empty (then the folder name is used).
 
 ```bash
 66degrees-factory init \
-  --name demo-kyc \
-  --output /Users/ritesh/Desktop/demo-kyc \
-  --domain banking \
-  --workflow kyc \
+  --name demo-afi \
+  --output ~/Desktop/demo-afi \
+  --domain bfs \
+  --workflow afi \
   --yes
 ```
 
@@ -124,9 +121,9 @@ Follow-up URL prompts appear only for Redis, memcached, OpenSearch, Qdrant, Bedr
 ```bash
 66degrees-factory init \
   --name demo \
-  --output /Users/ritesh/Desktop/demo \
+  --output ~/Desktop/demo \
   --domain retail \
-  --workflow returns \
+  --workflow accr \
   --yes \
   --dry-run
 ```
@@ -159,7 +156,7 @@ Optional `--name` / `--output` override the JSON.
 | `--parser` | `docling` | `PDF_BACKEND` |
 | `--guardrails` | `passthrough` | `passthrough` \| `bedrock` |
 | `--eval` | `local` | `local` \| `deepeval` |
-| `--langfuse` / `--no-langfuse` | on | `LANGFUSE_ENABLED` |
+| `--langfuse` / `--no-langfuse` | off | `LANGFUSE_ENABLED` |
 | `--logfire` / `--no-logfire` | off | `LOGFIRE_ENABLED` |
 | `--adk` / `--no-adk` | off | `ADK_ENABLED` |
 | `--a2a` / `--no-a2a` | off | `A2A_ENABLED` |
@@ -170,7 +167,7 @@ Optional `--name` / `--output` override the JSON.
 | `--dry-run` | off | Print plan and `.env`; write nothing |
 | `--force` | off | Overwrite a non-empty destination |
 | `--force-planned` | off | Allow `--yes` with planned backends (Kong, pgvector, …) |
-| `--from-choices` | — | Path to `factory-choices.json` |
+| `--from-choices` | — | Path to `factory-choices.json` or `config/app.yaml` |
 
 `--yes` **rejects** planned backends unless `--force-planned`.
 

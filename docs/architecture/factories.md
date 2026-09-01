@@ -1,6 +1,6 @@
 # Factories
 
-All vendor backends stay under `factories/`. Init choices come from [`catalogs/factories.yaml`](../../catalogs/factories.yaml).
+All vendor backends stay under `factories/`. Init choices come from `catalogs/catalog.yaml`.
 
 ```python
 from factories.registry import get_factory_registry
@@ -13,7 +13,7 @@ eval_client = reg.eval()
 
 ## Add a backend
 
-1. Add a row under the capability in `catalogs/factories.yaml` (`implemented` | `stub` | `planned`).
+1. Add a row under `factories.capabilities` in `catalogs/catalog.yaml` (`implemented` | `planned`).
 2. Add `factories/<capability>/<backend>/client.py` (and `connector.yaml`).
 3. Branch in `factories/<capability>/factory.py`.
 4. `66degrees-factory list-factories` and the init wizard pick it up automatically.

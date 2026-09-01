@@ -48,12 +48,12 @@
 |------|---------|
 | One `init` | One domain, one workflow, one output directory |
 | Full snapshot | Entire template copy. Unused factory folders stay on disk |
-| Runtime swap | Backends are env-selected. `init` only writes `.env` / `project.yaml` |
+| Runtime swap | Backends from `config/app.yaml` then env. `init` writes `app.yaml` + `.env` |
 | Index URL | Must end in `/simple/` |
 | Ports | Docs local `:8001`. FastAPI `:8000` |
 
 !!! warning "Do not init into the template"
-    Output must be a **new** directory (for example `~/Desktop/demo-kyc`). `init` refuses the source tree.
+    Output must be a **new** directory (for example `~/Desktop/demo-afi`). `init` refuses the source tree.
 
 ## Local preview
 

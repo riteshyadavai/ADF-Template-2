@@ -9,11 +9,13 @@ import typer
 from rich.console import Console
 from rich.table import Table
 
-from cli.catalog import get_domain, get_workflow, load_domains
+from cli.catalog import get_domain, get_workflow, load_domains, resolve_domain_id, resolve_workflow_id
 from cli.choices import FactoryChoices, load_choices_file
 from cli.copier import destination_exists_nonempty, generate_project
+from cli.dest import dest_mode_label, slugify, suggest_dest
 from cli.factory_catalog import assert_backend_allowed, load_factory_catalog
 from cli.template_root import template_root
+from cli.ui import stack_one_liner
 from config.project_config import load_project_config
 from config.settings import PROJECT_ROOT
 
@@ -28,8 +30,10 @@ def _print_summary(choices: FactoryChoices) -> None:
     rows = [
         ("Project", choices.project_name),
         ("Output", str(choices.dest())),
+        ("Dest", dest_mode_label(choices.dest()) if not choices.dest_mode else choices.dest_mode),
         ("Domain", choices.domain),
         ("Workflow", choices.workflow),
+        ("Stack", stack_one_liner(gateway=choices.gateway, cache=choices.cache, vector=choices.vector)),
         ("Gateway", choices.gateway),
         ("Cache", choices.cache),
         ("Vector", choices.vector),
@@ -41,6 +45,7 @@ def _print_summary(choices: FactoryChoices) -> None:
         ("Logfire", str(choices.logfire)),
         ("ADK", str(choices.adk)),
         ("A2A", str(choices.a2a)),
+        ("Plan", choices.plan_mode),
         ("Environment", choices.environment),
         ("Template", f"{choices.template_package} {choices.template_version}"),
     ]
@@ -52,12 +57,13 @@ def _print_summary(choices: FactoryChoices) -> None:
 @app.command("list-domains")
 def list_domains() -> None:
     for domain in load_domains():
-        console.print(domain.id)
+        aliases = ", ".join(domain.aliases) if domain.aliases else domain.id
+        console.print(f"{domain.id:<10} {domain.name}  [{aliases}]")
 
 
 @app.command("list-workflows")
 def list_workflows(domain: Annotated[str, typer.Option("--domain")]) -> None:
-    catalog = get_domain(domain)
+    catalog = get_domain(resolve_domain_id(domain))
     for workflow in catalog.workflows:
         console.print(f"{workflow.id:<20} {workflow.name}")
 
@@ -133,7 +139,7 @@ def init(
     """Create a new project from this template (one domain + one workflow)."""
     if load_project_config(PROJECT_ROOT) is not None:
         console.print(
-            "[yellow]Warning:[/yellow] this directory already has config/project.yaml. "
+            "[yellow]Warning:[/yellow] this directory already has config/app.yaml. "
             "init creates a new project folder; it does not reconfigure the current one."
         )
 
@@ -146,12 +152,15 @@ def init(
         _finalize_init(choices, yes=True, dry_run=dry_run, force=force)
         return
 
-    if yes and (not name or not domain or not workflow):
-        raise typer.BadParameter("--yes requires --name, --domain, and --workflow")
+    suggestion = suggest_dest(name=name, output=output)
+    if yes and (not domain or not workflow):
+        raise typer.BadParameter("--yes requires --domain and --workflow")
+    if yes and not name and suggestion.mode != "this_folder":
+        raise typer.BadParameter("--yes requires --name unless you are in an empty folder")
 
-    project_name = name or "my-agent-project"
-    dest = output or Path(f"./{project_name}")
-    slug = project_name.replace("-", "_").replace(" ", "_")
+    project_name = name or suggestion.project_name
+    dest = output or suggestion.output
+    slug = slugify(project_name)
 
     partial = FactoryChoices(
         project_name=project_name,
@@ -170,20 +179,32 @@ def init(
         parser=parser or "docling",
         guardrails=guardrails or "passthrough",
         eval_backend=eval_backend or "local",
-        langfuse=True if langfuse is None else langfuse,
+        langfuse=False if langfuse is None else langfuse,
         logfire=False if logfire is None else logfire,
         adk=False if adk is None else adk,
         a2a=False if a2a is None else a2a,
         mcp_examples=False if mcp_examples is None else mcp_examples,
         secrets_backend=secrets_backend or "env",
         environment=environment or "local",
+        dest_mode=dest_mode_label(dest.expanduser()),
     )
 
     if not yes:
         from cli.wizard import run_wizard
 
-        choices = run_wizard(partial)
+        choices = run_wizard(partial, force_planned=force_planned)
     else:
+        partial.domain = resolve_domain_id(partial.domain)
+        partial.workflow = resolve_workflow_id(partial.domain, partial.workflow)
+        plan = get_workflow(partial.domain, partial.workflow)
+        partial.plan_mode = "accepted"
+        partial.workflow_plan = plan.model_dump()
+        if cache is None:
+            partial.cache = plan.recommended_stack.cache
+        if vector is None:
+            partial.vector = plan.recommended_stack.vector
+        if gateway is None:
+            partial.gateway = plan.recommended_stack.gateway
         get_domain(partial.domain)
         get_workflow(partial.domain, partial.workflow)
         try:
@@ -231,10 +252,8 @@ def _finalize_init(
     generate_project(choices, dry_run=False)
     console.print(f"Copied template → {dest}")
     console.print(f"Wrote domains/{choices.domain}/workflows/{choices.workflow}/")
-    console.print("Wrote .env, config/project.yaml, factory-choices.json")
+    console.print("Wrote .env, config/app.yaml, factory-choices.json")
+    extras = " && ".join(h for h in choices.extras_hints() if not h.startswith("#"))
     console.print("\nNext:")
-    console.print(f"  cd {dest}")
-    for hint in choices.extras_hints():
-        console.print(f"  {hint}")
+    console.print(f"  cd {dest} && {extras} && make dev")
     console.print("  # set GOOGLE_API_KEY (and other CHANGE_ME keys)")
-    console.print("  make dev")

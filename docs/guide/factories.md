@@ -1,6 +1,6 @@
 # Factories and extras
 
-Selection is **runtime env**. `init` only writes values. Catalog: `catalogs/factories.yaml`.
+Selection is **runtime** (`config/app.yaml` then env). `init` writes those values. Allowed backends live in `catalogs/catalog.yaml` (CLI only).
 
 !!! note "Planned backends"
     Kong, pgvector, weaviate, vault, sops raise `NotImplementedError`. Do not ship silent memory fakes.
@@ -71,7 +71,7 @@ A2A_PEER_URL=http://127.0.0.1:8000
 
 ## Add a backend
 
-1. Row in `catalogs/factories.yaml` (`implemented` \| `planned`).
+1. Row under `factories.capabilities` in `catalogs/catalog.yaml` (`implemented` \| `planned`).
 2. `factories/<capability>/<backend>/client.py` (+ `connector.yaml`).
 3. Branch in `factories/<capability>/factory.py`.
 4. `66degrees-factory list-factories` and the init wizard pick it up.

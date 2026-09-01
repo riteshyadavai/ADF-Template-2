@@ -1,6 +1,0 @@
-# Model routing defaults (env vars in .env take precedence).
-
-provider: litellm
-default_model: gemini/gemini-2.5-flash
-fallback_models:
-  - gemini/gemini-2.0-flash

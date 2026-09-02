@@ -1,4 +1,4 @@
-version: "0.2.6"
+version: "0.2.7"
 domains:
   bfs:
     name: Banking and Financial Services
@@ -431,6 +431,64 @@ domains:
               next: [plan]
             - id: plan
               agent_name: avmts_planner
+              next: []
+  other:
+    name: Custom (name your own)
+    aliases: [other, custom]
+    description: Starter domain when you name your own domain and workflow.
+    mcp_servers:
+      - id: other-operations
+        enabled: false
+        transport: streamable_http
+        url: "${OTHER_MCP_URL}"
+        token_env: OTHER_MCP_TOKEN
+    workflows:
+      custom:
+        name: Custom workflow
+        aliases: [custom]
+        summary: Generic multi-agent starter. Name your domain and workflow, then keep or edit agents and pick a platform stack.
+        recommended_stack:
+          gateway: litellm
+          cache: memory
+          vector: memory
+        skills: [other-custom]
+        tools: [vector_search]
+        evals:
+          - id: capability
+            query: Hello, what can you help me with?
+          - id: tool_use
+            query: Handle this request using your tools. Stay within the facts in the query.
+        agents:
+          - name: intake
+            description: Structures the request and missing facts.
+            allowed_tools: [vector_search]
+            prompt_stub: |
+              You are an intake agent. Extract the goal, entities, and gaps
+              from the query. Do not invent facts.
+          - name: worker
+            description: Drafts the answer from intake facts.
+            allowed_tools: [vector_search]
+            prompt_stub: |
+              You are a worker agent. Draft a clear result from intake facts.
+              Cite uncertainty. Do not invent data.
+          - name: reviewer
+            description: Prepares a HITL review packet.
+            allowed_tools: []
+            prompt_stub: |
+              You are a review agent. Summarize the draft for a human.
+              Do not finalize the decision yourself.
+        graph:
+          entry: intake
+          nodes:
+            - id: intake
+              agent_name: intake
+              next: [work]
+            - id: work
+              agent_name: worker
+              next: [review]
+            - id: review
+              agent_name: reviewer
+              requires_hitl: true
               next: []
 
 factories:

@@ -1,6 +1,6 @@
 # 66degrees Factory
 
-Package **`multi-agent-factory` 0.2.6**. Console command **`66degrees-factory`** (alias **`factory`**).
+Package **`multi-agent-factory` 0.2.7**. Console command **`66degrees-factory`** (alias **`factory`**).
 
 This repo is the **generator** and the default runtime template. `init` writes a **developer agent app** (one domain + one workflow). It does **not** copy `catalogs/` or `cli/` into that app.
 
@@ -82,6 +82,7 @@ Non-interactive:
 | `bfs` | `afi`, `clu`, `rca` |
 | `hcls` | `epa`, `ctpm`, `addw` |
 | `retail` | `accr`, `dcap`, `avmts` |
+| `other` | name your own domain + workflow |
 
 Interactive `init` previews the catalog plan (agents + graph). Accept it, or customize agents/HITL and then configure backends.
 
@@ -256,4 +257,4 @@ make docs-deploy   # Cloud Run adf-factory-docs (ai-ml-team-sandbox only)
 - [Run](docs/guide/run.md)
 - [Publish the package](docs/guide/publish-gcp.md)
 
-New CLI versions update **new** `init` snapshots (`template.version` in `config/app.yaml`). Existing apps keep the factories they were generated with. Pin `multi-agent-factory==0.2.6` in a team runbook.
+New CLI versions update **new** `init` snapshots (`template.version` in `config/app.yaml`). Existing apps keep the factories they were generated with. Pin `multi-agent-factory==0.2.7` in a team runbook.

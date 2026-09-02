@@ -1,12 +1,19 @@
 """Catalog schema tests."""
 
-from cli.catalog import get_domain, get_workflow, load_domains, resolve_domain_id
+from cli.catalog import (
+    clone_workflow,
+    get_domain,
+    get_workflow,
+    load_domains,
+    resolve_domain_id,
+    validate_slug,
+)
 
 
 def test_all_domain_catalogs_validate():
     domains = load_domains()
     ids = {d.id for d in domains}
-    assert ids == {"bfs", "hcls", "retail"}
+    assert ids == {"bfs", "hcls", "retail", "other"}
     for domain in domains:
         assert domain.workflows
         seen = set()
@@ -17,6 +24,25 @@ def test_all_domain_catalogs_validate():
             assert workflow.summary
             node_ids = {n.id for n in workflow.graph.nodes}
             assert workflow.graph.entry in node_ids
+
+
+def test_other_domain_and_clone_workflow():
+    assert resolve_domain_id("custom") == "other"
+    other = get_domain("custom")
+    starter = get_workflow("other", "custom")
+    assert len(starter.agents) == 3
+    cloned = clone_workflow(starter, id="intake", name="Intake")
+    assert cloned.id == "intake"
+    assert cloned.name == "Intake"
+    assert cloned.graph.entry == starter.graph.entry
+
+
+def test_validate_slug_rejects_spaces_and_caps():
+    import pytest
+
+    with pytest.raises(ValueError, match="lowercase slug"):
+        validate_slug("My Flow", kind="workflow")
+    assert validate_slug("intake_v1", kind="workflow") == "intake_v1"
 
 
 def test_bfs_workflows_and_alias():

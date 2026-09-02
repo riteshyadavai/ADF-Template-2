@@ -9,7 +9,15 @@ import typer
 from rich.console import Console
 from rich.table import Table
 
-from cli.catalog import get_domain, get_workflow, load_domains, resolve_domain_id, resolve_workflow_id
+from cli.catalog import (
+    clone_workflow,
+    get_domain,
+    get_workflow,
+    load_domains,
+    resolve_domain_id,
+    resolve_workflow_id,
+    validate_slug,
+)
 from cli.choices import FactoryChoices, load_choices_file
 from cli.copier import destination_exists_nonempty, generate_project
 from cli.dest import dest_mode_label, slugify, suggest_dest
@@ -135,6 +143,7 @@ def init(
     force: Annotated[bool, typer.Option("--force")] = False,
     force_planned: Annotated[bool, typer.Option("--force-planned")] = False,
     from_choices: Annotated[Path | None, typer.Option("--from-choices")] = None,
+    custom_domain: Annotated[str | None, typer.Option("--custom-domain")] = None,
 ) -> None:
     """Create a new project from this template (one domain + one workflow)."""
     if load_project_config(PROJECT_ROOT) is not None:
@@ -194,9 +203,20 @@ def init(
 
         choices = run_wizard(partial, force_planned=force_planned)
     else:
-        partial.domain = resolve_domain_id(partial.domain)
-        partial.workflow = resolve_workflow_id(partial.domain, partial.workflow)
-        plan = get_workflow(partial.domain, partial.workflow)
+        catalog_domain = resolve_domain_id(partial.domain)
+        if catalog_domain == "other":
+            try:
+                folder = validate_slug(custom_domain or "other", kind="domain")
+                wf_slug = validate_slug(partial.workflow, kind="workflow")
+            except ValueError as exc:
+                raise typer.BadParameter(str(exc)) from exc
+            plan = clone_workflow(get_workflow("other", "custom"), id=wf_slug, name=wf_slug)
+            partial.domain = folder
+            partial.workflow = wf_slug
+        else:
+            partial.domain = catalog_domain
+            partial.workflow = resolve_workflow_id(partial.domain, partial.workflow)
+            plan = get_workflow(partial.domain, partial.workflow)
         partial.plan_mode = "accepted"
         partial.workflow_plan = plan.model_dump()
         if cache is None:
@@ -205,8 +225,6 @@ def init(
             partial.vector = plan.recommended_stack.vector
         if gateway is None:
             partial.gateway = plan.recommended_stack.gateway
-        get_domain(partial.domain)
-        get_workflow(partial.domain, partial.workflow)
         try:
             assert_backend_allowed("gateway", partial.gateway, force_planned=force_planned)
             assert_backend_allowed("cache", partial.cache, force_planned=force_planned)

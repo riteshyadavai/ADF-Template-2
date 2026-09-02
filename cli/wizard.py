@@ -9,11 +9,13 @@ from cli.catalog import (
     CatalogGraph,
     CatalogGraphNode,
     CatalogWorkflow,
+    clone_workflow,
     get_domain,
     get_workflow,
     load_domains,
     resolve_domain_id,
     resolve_workflow_id,
+    validate_slug,
 )
 from cli.choices import FactoryChoices
 from cli.copier import destination_exists_nonempty
@@ -274,11 +276,14 @@ def run_wizard(partial: FactoryChoices, *, force_planned: bool = False) -> Facto
     name, output = _stage_location(partial)
     slug = slugify(name)
 
-    domains = load_domains()
+    domains = [d for d in load_domains() if d.id != "other"] + [
+        d for d in load_domains() if d.id == "other"
+    ]
     domain: str | None = partial.domain or None
     workflow_id: str | None = partial.workflow or None
     plan_workflow: CatalogWorkflow | None = None
     plan_mode = "accepted"
+    custom = False
 
     stage = "domain" if not domain else ("workflow" if not workflow_id else "plan")
     while True:
@@ -291,7 +296,30 @@ def run_wizard(partial: FactoryChoices, *, force_planned: bool = False) -> Facto
                 continue
             domain = resolve_domain_id(labels[picked])
             workflow_id = None
-            stage = "workflow"
+            plan_workflow = None
+            custom = domain == "other"
+            stage = "name_custom" if custom else "workflow"
+            continue
+        if stage == "name_custom":
+            print_header(3, 4, "Name")
+            print_hint()
+            try:
+                domain = validate_slug(_text("Domain id (slug)", "acme"), kind="domain")
+                _text("Domain display name", domain)
+                workflow_id = validate_slug(_text("Workflow id (slug)", "intake"), kind="workflow")
+                wf_name = _text("Workflow display name", workflow_id)
+            except ValueError as exc:
+                from cli.ui import console
+
+                console.print(f"[red]{exc}[/red]")
+                continue
+            plan_workflow = clone_workflow(
+                get_workflow("other", "custom"),
+                id=workflow_id,
+                name=wf_name,
+            )
+            custom = True
+            stage = "plan"
             continue
         if stage == "workflow":
             print_header(3, 4, "Workflow")
@@ -304,10 +332,12 @@ def run_wizard(partial: FactoryChoices, *, force_planned: bool = False) -> Facto
                 continue
             workflow_id = resolve_workflow_id(catalog.id, labels[picked])
             domain = catalog.id
+            plan_workflow = None
             stage = "plan"
             continue
         print_header(4, 4, "Plan")
-        plan_workflow = get_workflow(domain or "", workflow_id or "")
+        if plan_workflow is None:
+            plan_workflow = get_workflow(domain or "", workflow_id or "")
         print_plan_card(plan_workflow)
         print_hint()
         decision = _select(
@@ -316,7 +346,7 @@ def run_wizard(partial: FactoryChoices, *, force_planned: bool = False) -> Facto
             "Accept this plan",
         )
         if decision == BACK:
-            stage = "workflow"
+            stage = "name_custom" if custom else "workflow"
             continue
         if decision == "Customize agents":
             plan_workflow = _customize_plan(plan_workflow)

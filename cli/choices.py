@@ -166,14 +166,19 @@ class FactoryChoices(BaseModel):
         return "\n".join(lines) + "\n"
 
     def _catalog_pair(self):
-        from cli.catalog import CatalogWorkflow, get_domain, get_workflow
+        from cli.catalog import CatalogWorkflow, clone_workflow, get_domain, get_workflow
 
-        domain = get_domain(self.domain)
+        try:
+            domain = get_domain(self.domain)
+        except ValueError:
+            domain = get_domain("other")
         if self.workflow_plan:
-            plan = CatalogWorkflow.model_validate(self.workflow_plan)
-        else:
-            plan = get_workflow(self.domain, self.workflow)
-        return domain, plan
+            return domain, CatalogWorkflow.model_validate(self.workflow_plan)
+        try:
+            return domain, get_workflow(self.domain, self.workflow)
+        except ValueError:
+            template = get_workflow("other", "custom")
+            return domain, clone_workflow(template, id=self.workflow, name=self.workflow)
 
     def render_readme(self) -> str:
         from cli.ui import stack_one_liner

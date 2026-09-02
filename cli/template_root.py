@@ -21,4 +21,4 @@ def template_version() -> str:
 
         return __version__
     except ImportError:
-        return "0.2.6"
+        return "0.2.7"

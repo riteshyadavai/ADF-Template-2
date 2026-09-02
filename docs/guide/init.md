@@ -2,7 +2,7 @@
 
 One output directory = **one domain + one workflow**. `bfs/afi` and `bfs/clu` are two `init` runs.
 
-Interactive `init` shows a **predefined plan** (agents + graph). Accept it, or customize agents/HITL and then configure backends.
+Interactive `init` shows a **predefined plan** (agents + graph). Accept it, or customize agents/HITL and then configure backends. Choose **other** to name your own domain and workflow slugs, then pick the same stack.
 
 !!! note "Write set"
     `.env` (secrets), `config/app.yaml` (runtime knobs), `factory-choices.json`, `pyproject.toml` name, `domains/<domain>/workflows/<workflow>/`.

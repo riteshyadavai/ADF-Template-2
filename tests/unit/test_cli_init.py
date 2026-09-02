@@ -109,6 +109,7 @@ def test_list_domains():
     assert "bfs" in result.output
     assert "hcls" in result.output
     assert "retail" in result.output
+    assert "other" in result.output
 
 
 def test_list_workflows_bfs_alias():
@@ -117,6 +118,12 @@ def test_list_workflows_bfs_alias():
     assert "afi" in result.output
     assert "clu" in result.output
     assert "rca" in result.output
+
+
+def test_list_workflows_other():
+    result = runner.invoke(app, ["list-workflows", "--domain", "other"])
+    assert result.exit_code == 0
+    assert "custom" in result.output
 
 
 def test_list_factories():
@@ -186,6 +193,59 @@ def test_init_yes_writes_recommended_stack(tmp_path: Path):
     evalset = (dest / "evals" / "afi" / "app.evalset.json").read_text(encoding="utf-8")
     assert "capability" in evalset
     assert "account 4412" in evalset
+
+
+def test_init_yes_other_custom_slugs(tmp_path: Path):
+    dest = tmp_path / "demo-custom"
+    result = runner.invoke(
+        app,
+        [
+            "init",
+            "--name",
+            "demo-custom",
+            "--output",
+            str(dest),
+            "--domain",
+            "other",
+            "--workflow",
+            "intake",
+            "--custom-domain",
+            "acme",
+            "--yes",
+        ],
+    )
+    assert result.exit_code == 0, result.output
+    assert (dest / "domains" / "acme" / "workflows" / "intake" / "graph.yaml").exists()
+    assert (dest / "domains" / "acme" / "workflows" / "intake" / "agents" / "intake.yaml").exists()
+    app_yaml = (dest / "config" / "app.yaml").read_text(encoding="utf-8")
+    assert "domain: acme" in app_yaml
+    assert "workflow: intake" in app_yaml
+    assert "other-operations" in app_yaml
+    assert "OTHER_MCP_TOKEN=CHANGE_ME" in (dest / ".env").read_text(encoding="utf-8")
+    readme = (dest / "README.md").read_text(encoding="utf-8")
+    assert readme.startswith("# demo-custom")
+    assert "hcls" not in app_yaml
+
+
+def test_init_yes_other_rejects_invalid_workflow(tmp_path: Path):
+    dest = tmp_path / "bad"
+    result = runner.invoke(
+        app,
+        [
+            "init",
+            "--name",
+            "bad",
+            "--output",
+            str(dest),
+            "--domain",
+            "other",
+            "--workflow",
+            "My Flow",
+            "--yes",
+        ],
+    )
+    assert result.exit_code != 0
+    assert "lowercase slug" in result.output
 
 
 def test_from_choices_app_yaml(tmp_path: Path):

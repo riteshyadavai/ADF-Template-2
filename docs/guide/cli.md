@@ -47,6 +47,7 @@ Print domains from `catalogs/catalog.yaml` (`id`, name, aliases).
 | `bfs` | `afi`, `clu`, `rca` |
 | `hcls` | `epa`, `ctpm`, `addw` |
 | `retail` | `accr`, `dcap`, `avmts` |
+| `other` | starter `custom` — you name domain + workflow slugs |
 
 ---
 
@@ -168,6 +169,7 @@ Optional `--name` / `--output` override the JSON.
 | `--force` | off | Overwrite a non-empty destination |
 | `--force-planned` | off | Allow `--yes` with planned backends (Kong, pgvector, …) |
 | `--from-choices` | — | Path to `factory-choices.json` or `config/app.yaml` |
+| `--custom-domain` | `other` | Folder slug when `--domain other` |
 
 `--yes` **rejects** planned backends unless `--force-planned`.
 

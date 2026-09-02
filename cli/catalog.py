@@ -2,12 +2,15 @@
 
 from __future__ import annotations
 
+import re
 from pathlib import Path
 
 import yaml
 from pydantic import BaseModel, Field, model_validator
 
 from cli.template_root import template_root
+
+SLUG_RE = re.compile(r"^[a-z][a-z0-9_-]*$")
 
 
 class RecommendedStack(BaseModel):
@@ -104,6 +107,26 @@ class CatalogDomain(BaseModel):
         if not ids:
             raise ValueError(f"domain '{self.id}' needs at least one workflow")
         return self
+
+
+def validate_slug(value: str, *, kind: str = "id") -> str:
+    slug = value.strip()
+    if not SLUG_RE.fullmatch(slug):
+        raise ValueError(
+            f"Invalid {kind} '{value}'. Use a lowercase slug such as acme or intake_v1."
+        )
+    return slug
+
+
+def clone_workflow(template: CatalogWorkflow, *, id: str, name: str | None = None) -> CatalogWorkflow:
+    workflow_id = validate_slug(id, kind="workflow")
+    return template.model_copy(
+        update={
+            "id": workflow_id,
+            "name": name or template.name,
+            "aliases": [workflow_id],
+        }
+    )
 
 
 def catalog_path(root: Path | None = None) -> Path:
@@ -253,9 +276,14 @@ def materialize_workflow(
     catalog_root: Path | None = None,
     workflow: CatalogWorkflow | None = None,
 ) -> Path:
-    domain = get_domain(domain_id, catalog_root)
-    plan = workflow or get_workflow(domain.id, workflow_id, catalog_root)
-    base = dest_root / "domains" / domain.id / "workflows" / plan.id
+    try:
+        catalog_domain = get_domain(domain_id, catalog_root)
+        folder_domain = catalog_domain.id
+    except ValueError:
+        folder_domain = validate_slug(domain_id, kind="domain")
+        catalog_domain = get_domain("other", catalog_root)
+    plan = workflow or get_workflow(catalog_domain.id, workflow_id, catalog_root)
+    base = dest_root / "domains" / folder_domain / "workflows" / plan.id
     agents_dir = base / "agents"
     prompts_dir = base / "prompts"
     agents_dir.mkdir(parents=True, exist_ok=True)

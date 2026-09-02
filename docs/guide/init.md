@@ -36,7 +36,7 @@ Runtime app snapshot (`app/`, `agents/`, `factories/`, `tests/`, `docs/`). **Not
 | Path | Purpose |
 |------|---------|
 | `.env` | Secrets (`CHANGE_ME`) |
-| `config/app.yaml` | Domain, workflow, plan mode, backends |
+| `config/app.yaml` | Chosen workflow snapshot (agents, prompts, MCP, evals) plus backends |
 | `factory-choices.json` | Replay (`--from-choices`) |
 | `domains/<domain>/workflows/<workflow>/` | Manifests, prompts, `graph.yaml` |
 

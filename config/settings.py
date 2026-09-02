@@ -257,11 +257,30 @@ def _normalize_app_yaml(raw: dict[str, Any]) -> dict[str, Any]:
         out["vector_store"] = vs
     obs = raw.get("observability")
     if isinstance(obs, dict):
-        if "langfuse" in obs:
-            out.setdefault("langfuse", {})["enabled"] = bool(obs["langfuse"])
-        if "logfire" in obs:
-            out.setdefault("logfire", {})["enabled"] = bool(obs["logfire"])
+        langfuse = _observability_plugin(obs.get("langfuse"))
+        if langfuse:
+            out["langfuse"] = langfuse
+        logfire = _observability_plugin(obs.get("logfire"))
+        if logfire:
+            out["logfire"] = logfire
+        if "otel_endpoint" in obs:
+            out.setdefault("observability", {})["otel_endpoint"] = obs.get("otel_endpoint")
     return out
+
+
+def _observability_plugin(value: Any) -> dict[str, Any]:
+    if isinstance(value, bool):
+        return {"enabled": value}
+    if isinstance(value, dict):
+        mapped: dict[str, Any] = {}
+        if "enabled" in value:
+            mapped["enabled"] = bool(value["enabled"])
+        if "host" in value:
+            mapped["host"] = value["host"]
+        if "service_name" in value:
+            mapped["service_name"] = value["service_name"]
+        return mapped
+    return {}
 
 
 def load_environment_overlay(env: Environment, root: Path | None = None) -> dict[str, Any]:

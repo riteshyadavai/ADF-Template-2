@@ -155,19 +155,108 @@ class FactoryChoices(BaseModel):
             )
         if self.embeddings == "jina":
             lines.extend(["", "JINA_API_KEY=CHANGE_ME"])
+        domain, _ = self._catalog_pair()
+        if domain.mcp_servers:
+            lines.append("")
+            for server in domain.mcp_servers:
+                if server.url.startswith("${") and server.url.endswith("}"):
+                    lines.append(f"{server.url[2:-1]}=")
+                if server.token_env:
+                    lines.append(f"{server.token_env}=CHANGE_ME")
         return "\n".join(lines) + "\n"
 
+    def _catalog_pair(self):
+        from cli.catalog import CatalogWorkflow, get_domain, get_workflow
+
+        domain = get_domain(self.domain)
+        if self.workflow_plan:
+            plan = CatalogWorkflow.model_validate(self.workflow_plan)
+        else:
+            plan = get_workflow(self.domain, self.workflow)
+        return domain, plan
+
+    def render_readme(self) -> str:
+        from cli.ui import stack_one_liner
+
+        domain, plan = self._catalog_pair()
+        env_keys = ["GOOGLE_API_KEY"]
+        if self.cache == "redis":
+            env_keys.append("CACHE_REDIS_URL")
+        if self.cache == "memcached":
+            env_keys.append("CACHE_MEMCACHED_URL")
+        if self.vector == "opensearch":
+            env_keys.append("VECTOR_OPENSEARCH_URL")
+        if self.vector == "qdrant":
+            env_keys.append("VECTOR_QDRANT_URL")
+        if self.gateway == "openai":
+            env_keys.append("OPENAI_API_KEY")
+        if self.gateway == "ollama":
+            env_keys.append("OLLAMA_BASE_URL")
+        for server in domain.mcp_servers:
+            if server.token_env:
+                env_keys.append(server.token_env)
+        stack = stack_one_liner(gateway=self.gateway, cache=self.cache, vector=self.vector)
+        skills = ", ".join(plan.skills) or "—"
+        tools = ", ".join(plan.tools) or "—"
+        return (
+            f"# {self.project_name}\n\n"
+            f"{domain.name} / **{plan.name}** (`{self.domain}/{self.workflow}`).\n\n"
+            f"{plan.summary}\n\n"
+            "## Run\n\n"
+            "```bash\n"
+            "uv sync\n"
+            "make dev\n"
+            "```\n\n"
+            "API docs: http://localhost:8000/api/v1/docs\n\n"
+            "## Stack\n\n"
+            f"{stack}\n\n"
+            f"Runtime knobs: `config/app.yaml` (env vars override). Plan: `{self.plan_mode}`.\n\n"
+            f"Skills: {skills}\n\n"
+            f"Tools: {tools}\n\n"
+            "## Environment\n\n"
+            "Set these in `.env`:\n\n"
+            + "".join(f"- `{key}`\n" for key in env_keys)
+            + "\n## Evals\n\n"
+            "```bash\n"
+            "uv run pytest evals/\n"
+            "```\n\n"
+            f"Cases for this workflow live in `evals/{self.workflow}/` and `evals:` in `config/app.yaml`.\n"
+        )
+
+    def render_evalset(self) -> dict:
+        _, plan = self._catalog_pair()
+        return {
+            "eval_set_name": plan.id,
+            "eval_cases": [
+                {
+                    "eval_id": item.id,
+                    "conversation": [{"user_content": item.query}],
+                }
+                for item in plan.evals
+            ],
+        }
+
     def render_app_yaml(self) -> str:
+        from cli.catalog import evals_payload, mcp_payload, workflow_snapshot
+
+        domain, plan = self._catalog_pair()
         payload = {
             "template": {
                 "package": self.template_package,
                 "version": self.template_version,
             },
             "project": {
+                "name": self.project_name,
                 "domain": self.domain,
                 "workflow": self.workflow,
+                "workflow_name": plan.name,
                 "plan": self.plan_mode,
+                "aliases": list(plan.aliases),
+                "skills": list(plan.skills),
             },
+            "workflow": workflow_snapshot(domain, plan),
+            "mcp": mcp_payload(domain),
+            "evals": evals_payload(plan),
             "environment": self.environment,
             "gateway": {
                 "provider": self.gateway,
@@ -197,8 +286,15 @@ class FactoryChoices(BaseModel):
                 "threshold": self.eval_threshold,
             },
             "observability": {
-                "langfuse": self.langfuse,
-                "logfire": self.logfire,
+                "langfuse": {
+                    "enabled": self.langfuse,
+                    "host": "https://cloud.langfuse.com",
+                },
+                "logfire": {
+                    "enabled": self.logfire,
+                    "service_name": self.slug,
+                },
+                "otel_endpoint": None,
             },
             "adk": {"enabled": self.adk},
             "a2a": {"enabled": self.a2a},
@@ -222,6 +318,12 @@ class FactoryChoices(BaseModel):
         )
 
 
+def _obs_enabled(value: object) -> bool:
+    if isinstance(value, dict):
+        return bool(value.get("enabled", False))
+    return bool(value)
+
+
 def factory_choices_from_app_yaml(
     raw: dict,
     *,
@@ -243,7 +345,9 @@ def factory_choices_from_app_yaml(
     tenant = raw.get("tenant") or {}
     domain = str(project.get("domain") or "")
     workflow = str(project.get("workflow") or "")
-    name = project_name or (f"{domain}-{workflow}" if domain and workflow else "replayed-project")
+    name = project_name or str(project.get("name") or "") or (
+        f"{domain}-{workflow}" if domain and workflow else "replayed-project"
+    )
     dest = output or Path(f"./{name}")
     return FactoryChoices(
         project_name=name,
@@ -268,8 +372,8 @@ def factory_choices_from_app_yaml(
         parser=str(pdf.get("backend") or "docling"),
         eval_backend=str(ev.get("backend") or "local"),
         eval_threshold=float(ev.get("threshold") or 0.8),
-        langfuse=bool(obs.get("langfuse", False)),
-        logfire=bool(obs.get("logfire", False)),
+        langfuse=_obs_enabled(obs.get("langfuse")),
+        logfire=_obs_enabled(obs.get("logfire")),
         state_backend=str(database.get("backend") or "memory"),
         db_hot_url=str(database.get("hot_url") or "sqlite+aiosqlite:///./data/hot_state.db"),
         db_cold_url=str(database.get("cold_url") or "sqlite+aiosqlite:///./data/cold_state.db"),

@@ -16,6 +16,19 @@ class RecommendedStack(BaseModel):
     vector: str = "memory"
 
 
+class CatalogEval(BaseModel):
+    id: str
+    query: str
+
+
+class CatalogMcpServer(BaseModel):
+    id: str
+    enabled: bool = False
+    transport: str = "streamable_http"
+    url: str = ""
+    token_env: str | None = None
+
+
 class CatalogAgent(BaseModel):
     name: str
     description: str
@@ -53,6 +66,9 @@ class CatalogWorkflow(BaseModel):
     description: str = ""
     aliases: list[str] = Field(default_factory=list)
     recommended_stack: RecommendedStack = Field(default_factory=RecommendedStack)
+    skills: list[str] = Field(default_factory=list)
+    tools: list[str] = Field(default_factory=list)
+    evals: list[CatalogEval] = Field(default_factory=list)
     agents: list[CatalogAgent]
     graph: CatalogGraph
 
@@ -65,6 +81,10 @@ class CatalogWorkflow(BaseModel):
         names = [a.name for a in self.agents]
         if len(names) != len(set(names)):
             raise ValueError(f"duplicate agent names in workflow '{self.id}'")
+        extra = list(self.tools)
+        for agent in self.agents:
+            extra.extend(agent.allowed_tools)
+        self.tools = list(dict.fromkeys(extra))
         return self
 
 
@@ -73,6 +93,7 @@ class CatalogDomain(BaseModel):
     name: str
     description: str = ""
     aliases: list[str] = Field(default_factory=list)
+    mcp_servers: list[CatalogMcpServer] = Field(default_factory=list)
     workflows: list[CatalogWorkflow]
 
     @model_validator(mode="after")
@@ -107,12 +128,17 @@ def load_domains(root: Path | None = None) -> list[CatalogDomain]:
             CatalogWorkflow(id=wf_id, **wf_body)
             for wf_id, wf_body in wf_map.items()
         ]
+        servers = [
+            CatalogMcpServer.model_validate(item)
+            for item in (body.get("mcp_servers") or [])
+        ]
         domains.append(
             CatalogDomain(
                 id=domain_id,
                 name=body.get("name", domain_id),
                 description=body.get("description", ""),
                 aliases=list(body.get("aliases") or []),
+                mcp_servers=servers,
                 workflows=workflows,
             )
         )
@@ -157,6 +183,46 @@ def get_workflow(domain_id: str, workflow_id: str, root: Path | None = None) -> 
         if workflow.id == resolved:
             return workflow
     raise ValueError(f"Unknown workflow '{workflow_id}' in {domain.id}")
+
+
+def workflow_snapshot(domain: CatalogDomain, workflow: CatalogWorkflow) -> dict:
+    return {
+        "summary": workflow.summary,
+        "skills": list(workflow.skills),
+        "tools": list(workflow.tools),
+        "agents": [
+            {
+                "name": agent.name,
+                "description": agent.description,
+                "tools": list(agent.allowed_tools),
+                "prompt": agent.prompt_stub.strip(),
+            }
+            for agent in workflow.agents
+        ],
+        "graph": {
+            "entry": workflow.graph.entry,
+            "nodes": [node.model_dump() for node in workflow.graph.nodes],
+        },
+    }
+
+
+def evals_payload(workflow: CatalogWorkflow) -> list[dict]:
+    return [{"id": item.id, "query": item.query} for item in workflow.evals]
+
+
+def mcp_payload(domain: CatalogDomain) -> dict:
+    return {
+        "servers": [
+            {
+                "id": server.id,
+                "enabled": server.enabled,
+                "transport": server.transport,
+                "url": server.url,
+                "token_env": server.token_env,
+            }
+            for server in domain.mcp_servers
+        ]
+    }
 
 
 def graph_chain(workflow: CatalogWorkflow) -> str:

@@ -23,6 +23,24 @@ def test_load_app_yaml_maps_vector_and_observability(tmp_path: Path, monkeypatch
     assert data["logfire"]["enabled"] is True
 
 
+def test_load_app_yaml_nested_langfuse(tmp_path: Path, monkeypatch):
+    config = tmp_path / "config"
+    config.mkdir()
+    (config / "app.yaml").write_text(
+        "observability:\n"
+        "  langfuse:\n    enabled: false\n    host: https://example.com\n"
+        "  logfire:\n    enabled: true\n    service_name: demo\n"
+        "  otel_endpoint: http://localhost:4318\n",
+        encoding="utf-8",
+    )
+    monkeypatch.setattr("config.settings.PROJECT_ROOT", tmp_path)
+    data = load_app_yaml(tmp_path)
+    assert data["langfuse"]["enabled"] is False
+    assert data["langfuse"]["host"] == "https://example.com"
+    assert data["logfire"]["service_name"] == "demo"
+    assert data["observability"]["otel_endpoint"] == "http://localhost:4318"
+
+
 def test_get_settings_reads_app_yaml(tmp_path: Path, monkeypatch):
     config = tmp_path / "config"
     config.mkdir()

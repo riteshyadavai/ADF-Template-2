@@ -85,6 +85,15 @@ def test_init_yes_copies_full_tree_and_one_workflow(tmp_path: Path):
     assert "domain: hcls" in app_yaml
     assert "workflow: epa" in app_yaml
     assert "plan: accepted" in app_yaml
+    assert "mcp:" in app_yaml
+    assert "hcls-interoperability" in app_yaml
+    assert "CoverageRulesEngine" in app_yaml
+    readme = (dest / "README.md").read_text(encoding="utf-8")
+    assert readme.startswith("# hcls-epa")
+    assert "list-domains" not in readme
+    assert "Artifact Registry" not in readme
+    assert "Generate a project" not in readme
+    assert (dest / "evals" / "epa" / "app.evalset.json").exists()
     assert not (dest / "config" / "project.yaml").exists()
     assert (dest / "factory-choices.json").exists()
     assert not (dest / "catalogs").exists()
@@ -163,9 +172,20 @@ def test_init_yes_writes_recommended_stack(tmp_path: Path):
     assert "domain: bfs" in app_yaml
     assert "workflow: afi" in app_yaml
     assert "backend: redis" in app_yaml
+    assert "workflow:" in app_yaml
+    assert "afi_intake" in app_yaml
+    assert "evals:" in app_yaml
+    assert "bfs-operations" in app_yaml
+    assert "langfuse:" in app_yaml
+    assert "host:" in app_yaml
+    assert "hcls:" not in app_yaml
     env = (dest / ".env").read_text(encoding="utf-8")
     assert "CACHE_BACKEND=redis" in env
     assert "GATEWAY_PROVIDER=litellm" in env
+    assert "BFS_MCP_TOKEN=CHANGE_ME" in env
+    evalset = (dest / "evals" / "afi" / "app.evalset.json").read_text(encoding="utf-8")
+    assert "capability" in evalset
+    assert "account 4412" in evalset
 
 
 def test_from_choices_app_yaml(tmp_path: Path):

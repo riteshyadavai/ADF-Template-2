@@ -89,7 +89,7 @@ Requires **Python 3.11+** and [uv](https://docs.astral.sh/uv/). Entry points: `6
     ```bash
     cd /Users/ritesh/Desktop/multi-agent-factory
     uv build --wheel
-    uv tool install dist/multi_agent_factory-0.2.5-py3-none-any.whl
+    uv tool install dist/multi_agent_factory-0.2.6-py3-none-any.whl
     ```
 
 ## Command not found

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import shutil
 from pathlib import Path
 
@@ -124,19 +125,15 @@ def render_project_files(dest: Path, choices: FactoryChoices) -> None:
         )
         pyproject.write_text(text, encoding="utf-8")
 
-    readme = dest / "README.md"
-    if readme.exists():
-        body = readme.read_text(encoding="utf-8")
-        pair = f"{choices.domain}/{choices.workflow}"
-        header = f"# {choices.project_name}\n\nGenerated from 66degrees-factory ({pair}).\n\n"
-        if body.startswith("# "):
-            rest = body.split("\n", 1)[1] if "\n" in body else ""
-            readme.write_text(header + rest, encoding="utf-8")
-        else:
-            readme.write_text(header + body, encoding="utf-8")
-
+    (dest / "README.md").write_text(choices.render_readme(), encoding="utf-8")
     (dest / ".env").write_text(choices.render_env(), encoding="utf-8")
     (dest / "config" / "app.yaml").write_text(choices.render_app_yaml(), encoding="utf-8")
+    eval_dir = dest / "evals" / choices.workflow
+    eval_dir.mkdir(parents=True, exist_ok=True)
+    (eval_dir / "app.evalset.json").write_text(
+        json.dumps(choices.render_evalset(), indent=2) + "\n",
+        encoding="utf-8",
+    )
     choices.write_choices_file(dest)
 
 

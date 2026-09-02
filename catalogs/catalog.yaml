@@ -1,9 +1,15 @@
-version: "0.2.5"
+version: "0.2.6"
 domains:
   bfs:
     name: Banking and Financial Services
     aliases: [bfs, banking]
     description: Retail and commercial banking agent workflows.
+    mcp_servers:
+      - id: bfs-operations
+        enabled: false
+        transport: streamable_http
+        url: "${BFS_MCP_URL}"
+        token_env: BFS_MCP_TOKEN
     workflows:
       afi:
         name: Autonomous Fraud Investigation
@@ -13,6 +19,13 @@ domains:
           gateway: litellm
           cache: redis
           vector: memory
+        skills: [bfs-afi]
+        tools: [AnySQLSafeExecutor, TransactionGraphLookup, FraudCaseNotes]
+        evals:
+          - id: capability
+            query: Hello, what can you help me with for autonomous fraud investigation?
+          - id: tool_use
+            query: Investigate possible fraud on account 4412. Use your tools, cite results, and do not invent balances or alerts.
         agents:
           - name: afi_intake
             description: Structures the alert, account, and claimed anomaly.
@@ -56,6 +69,13 @@ domains:
           gateway: litellm
           cache: memory
           vector: opensearch
+        skills: [bfs-clu]
+        tools: [CreditMemoAssembler, FinancialStatementParser, CovenantChecker]
+        evals:
+          - id: capability
+            query: Hello, what can you help me with for commercial loan underwriting?
+          - id: tool_use
+            query: Draft a credit memo for a mid-market term loan. Use your tools. Do not approve the credit yourself.
         agents:
           - name: clu_intake
             description: Collects borrower, facility, and document facts.
@@ -97,6 +117,13 @@ domains:
           gateway: openai
           cache: memory
           vector: memory
+        skills: [bfs-rca]
+        tools: [PolicyCorpusSearch, AuditEvidenceLocker, ControlTestRunner]
+        evals:
+          - id: capability
+            query: Hello, what can you help me with for regulatory compliance and auditing?
+          - id: tool_use
+            query: Test the access-control policy for wire transfers. Quote sources and do not assert a finding without evidence.
         agents:
           - name: rca_intake
             description: Frames the control, policy, and scope.
@@ -133,6 +160,12 @@ domains:
     name: Healthcare and Life Sciences
     aliases: [hcls, healthcare, "health care"]
     description: Payer, provider, and discovery agent workflows.
+    mcp_servers:
+      - id: hcls-interoperability
+        enabled: false
+        transport: streamable_http
+        url: "${HCLS_MCP_URL}"
+        token_env: HCLS_MCP_TOKEN
     workflows:
       epa:
         name: End-to-End Prior Authorization
@@ -142,6 +175,13 @@ domains:
           gateway: litellm
           cache: redis
           vector: memory
+        skills: [hcls-epa]
+        tools: [CoverageRulesEngine, ClinicalGuidelineLookup, AuthPacketBuilder]
+        evals:
+          - id: capability
+            query: Hello, what can you help me with for prior authorization?
+          - id: tool_use
+            query: Assemble a prior-auth packet for MRI of the knee. Protect PHI and do not guarantee approval.
         agents:
           - name: epa_intake
             description: Extracts procedure, diagnosis, and payer hints.
@@ -183,6 +223,13 @@ domains:
           gateway: litellm
           cache: memory
           vector: qdrant
+        skills: [hcls-ctpm]
+        tools: [EligibilityCriteriaMatcher, EhrPatientFinder, TrialSlotCalendar]
+        evals:
+          - id: capability
+            query: Hello, what can you help me with for clinical trial patient matching?
+          - id: tool_use
+            query: Match this patient summary to trial NCT00000000. Do not fabricate EHR data.
         agents:
           - name: ctpm_intake
             description: Structures trial id and patient summary facts.
@@ -223,6 +270,13 @@ domains:
           gateway: ollama
           cache: memory
           vector: memory
+        skills: [hcls-addw]
+        tools: [AssayResultIndex, CompoundLibrarySearch, LiteratureGraphQuery]
+        evals:
+          - id: capability
+            query: Hello, what can you help me with for automated drug discovery?
+          - id: tool_use
+            query: Find assay results for compound CX-19. Separate hypothesis from measured results.
         agents:
           - name: addw_retriever
             description: Pulls assay and compound hints from the query.
@@ -249,6 +303,12 @@ domains:
     name: Retail
     aliases: [retail]
     description: Concierge, pricing, and merchandising agent workflows.
+    mcp_servers:
+      - id: retail-commerce
+        enabled: false
+        transport: streamable_http
+        url: "${RETAIL_MCP_URL}"
+        token_env: RETAIL_MCP_TOKEN
     workflows:
       accr:
         name: Autonomous Customer Concierge & Resolution
@@ -258,6 +318,13 @@ domains:
           gateway: litellm
           cache: memcached
           vector: memory
+        skills: [retail-accr]
+        tools: [OrderAndReturnLookup, PolicyExceptionApprover, ConversationMemoryStore]
+        evals:
+          - id: capability
+            query: Hello, what can you help me with for order issues and returns?
+          - id: tool_use
+            query: Look up order 100245 and explain return options. Do not invent order state.
         agents:
           - name: accr_intake
             description: Extracts order id, reason, and claimed state.
@@ -299,6 +366,13 @@ domains:
           gateway: litellm
           cache: redis
           vector: memory
+        skills: [retail-dcap]
+        tools: [CompetitorPriceFeed, InventorySignalReader, PriceGuardrails]
+        evals:
+          - id: capability
+            query: Hello, what can you help me with for context-aware pricing?
+          - id: tool_use
+            query: Recommend a price for SKU A-100 given inventory and competitors. Never breach guardrails.
         agents:
           - name: dcap_signals
             description: Collects SKU, inventory, and competitor hints.
@@ -329,6 +403,13 @@ domains:
           gateway: litellm
           cache: memory
           vector: opensearch
+        skills: [retail-avmts]
+        tools: [ShelfImageTagger, TrendSocialIngest, PlanogramSuggester]
+        evals:
+          - id: capability
+            query: Hello, what can you help me with for visual merchandising and trend sourcing?
+          - id: tool_use
+            query: Suggest a planogram change from this shelf description. Call out low-confidence tags.
         agents:
           - name: avmts_tagger
             description: Tags shelf or trend language from the query.

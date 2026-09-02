@@ -26,6 +26,15 @@ def test_bfs_workflows_and_alias():
     assert get_workflow("bfs", "fraud").id == "afi"
 
 
+def test_workflows_have_mcp_evals_and_skills():
+    for domain in load_domains():
+        assert domain.mcp_servers
+        for workflow in domain.workflows:
+            assert workflow.skills
+            assert workflow.tools
+            assert workflow.evals
+
+
 def test_recommended_stacks_match_plan():
     expected = {
         ("bfs", "afi"): ("litellm", "redis", "memory"),

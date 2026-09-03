@@ -131,6 +131,63 @@ def test_list_factories():
     assert result.exit_code == 0
     assert "cache" in result.output
     assert "qdrant" in result.output
+    assert "looker" in result.output
+    assert "bqml" in result.output
+
+
+def test_init_yes_looker_bqml(tmp_path: Path):
+    dest = tmp_path / "demo-analytics"
+    result = runner.invoke(
+        app,
+        [
+            "init",
+            "--name",
+            "demo-analytics",
+            "--output",
+            str(dest),
+            "--domain",
+            "other",
+            "--workflow",
+            "site_selection",
+            "--custom-domain",
+            "district_dine",
+            "--looker",
+            "--bqml",
+            "--yes",
+        ],
+    )
+    assert result.exit_code == 0, result.output
+    env = (dest / ".env").read_text(encoding="utf-8")
+    assert "LOOKER_ENABLED=true" in env
+    assert "LOOKERSDK_CLIENT_ID=CHANGE_ME" in env
+    assert "BQML_ENABLED=true" in env
+    app_yaml = (dest / "config" / "app.yaml").read_text(encoding="utf-8")
+    assert "looker:" in app_yaml
+    assert "bqml:" in app_yaml
+    assert "enabled: true" in app_yaml
+
+
+def test_init_yes_default_looker_bqml_off(tmp_path: Path):
+    dest = tmp_path / "demo-afi"
+    result = runner.invoke(
+        app,
+        [
+            "init",
+            "--name",
+            "demo-off",
+            "--output",
+            str(dest),
+            "--domain",
+            "bfs",
+            "--workflow",
+            "afi",
+            "--yes",
+        ],
+    )
+    assert result.exit_code == 0, result.output
+    env = (dest / ".env").read_text(encoding="utf-8")
+    assert "LOOKER_ENABLED=false" in env
+    assert "BQML_ENABLED=false" in env
 
 
 def test_init_dry_run_qdrant_env(tmp_path: Path):

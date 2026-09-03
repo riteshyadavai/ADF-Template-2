@@ -1,0 +1,4 @@
+status: implemented
+env: [BQML_ENABLED, BQML_PROJECT, BQML_LOCATION, BQML_DATASET, BQML_MODEL]
+example: uv run python examples/bqml_smoke.py
+extra: bqml

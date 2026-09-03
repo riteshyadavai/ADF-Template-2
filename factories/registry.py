@@ -14,6 +14,8 @@ from config.settings import Settings, get_settings
 from factories.a2a.factory import make_a2a_server
 from factories.a2a.protocol import A2AServerBundle
 from factories.adk.app import make_adk_app
+from factories.bqml.factory import make_bqml_client
+from factories.bqml.protocol import BqmlClient
 from factories.adk.factory import make_adk_runner
 from factories.adk.protocol import ADKRunner
 from factories.ai_gateway.litellm.factory import make_ai_gateway
@@ -29,6 +31,8 @@ from factories.guardrails.factory import make_content_guardrail
 from factories.guardrails.protocol import ContentGuardrail
 from factories.llm.factory import make_llm_client
 from factories.llm.protocol import LLMClientProtocol
+from factories.looker.factory import make_looker_client
+from factories.looker.protocol import LookerClient
 from factories.mcp.factory import make_mcp_bundle
 from factories.mcp.protocol import MCPBundle
 from factories.observability.factory import (
@@ -118,6 +122,12 @@ class FactoryRegistry:
 
     def llm_tracer(self) -> LangfuseTracer:
         return make_llm_tracer(self.settings)
+
+    def looker(self) -> LookerClient:
+        return make_looker_client(self.settings)
+
+    def bqml(self) -> BqmlClient:
+        return make_bqml_client(self.settings)
 
 
 @lru_cache

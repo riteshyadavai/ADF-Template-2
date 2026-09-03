@@ -30,6 +30,8 @@ gateway = reg.ai_gateway()
 | ADK | `ADK_ENABLED` | in-memory App + runner | `vertex` | `examples/adk_smoke.py` |
 | A2A | `A2A_ENABLED` | SDK server + client | — | mount on FastAPI; `A2A_PEER_URL` |
 | MCP | `mcp.yaml` | stdio, HTTP | — | `--mcp-examples` on init |
+| Looker | `LOOKER_ENABLED` | `sdk` (`looker-sdk` init40) | — | `--extra looker` |
+| BQML | `BQML_ENABLED` | `bigquery` | — | `--extra bqml` |
 
 ## Install extras after generate
 
@@ -41,6 +43,8 @@ uv sync --extra documents
 uv sync --extra opensearch
 uv sync --extra qdrant
 uv sync --extra cache-memcached
+uv sync --extra looker
+uv sync --extra bqml
 uv sync --group eval
 uv sync --group observability
 ```
@@ -67,6 +71,17 @@ DB_COLD_URL=sqlite+aiosqlite:///./data/cold_state.db
 ADK_ENABLED=true
 A2A_ENABLED=true
 A2A_PEER_URL=http://127.0.0.1:8000
+
+LOOKER_ENABLED=true
+LOOKERSDK_BASE_URL=https://your.cloud.looker.com
+LOOKERSDK_CLIENT_ID=...
+LOOKERSDK_CLIENT_SECRET=...
+
+BQML_ENABLED=true
+BQML_PROJECT=my-gcp-project
+BQML_LOCATION=US
+BQML_DATASET=sites
+BQML_MODEL=site_score
 ```
 
 ## Add a backend
@@ -90,4 +105,14 @@ uv run python examples/adk_smoke.py
 export A2A_ENABLED=true
 export A2A_PEER_URL=http://127.0.0.1:8000
 uv run python examples/a2a_client_smoke.py
+
+# Looker
+export LOOKER_ENABLED=true
+uv sync --extra looker
+uv run python examples/looker_smoke.py
+
+# BQML
+export BQML_ENABLED=true
+uv sync --extra bqml
+uv run python examples/bqml_smoke.py
 ```

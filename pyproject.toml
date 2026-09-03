@@ -1,6 +1,6 @@
 [project]
 name = "multi-agent-factory"
-version = "0.2.7"
+version = "0.2.8"
 description = "Production-ready reusable multi-agent project factory with shared infrastructure, security, and observability."
 readme = "README.md"
 requires-python = ">=3.11"
@@ -73,6 +73,12 @@ qdrant = [
 ]
 cache-memcached = [
     "pymemcache>=4.0.0",
+]
+looker = [
+    "looker-sdk>=24.0.0",
+]
+bqml = [
+    "google-cloud-bigquery>=3.25.0",
 ]
 
 [tool.pytest.ini_options]

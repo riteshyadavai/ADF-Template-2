@@ -1,7 +1,7 @@
 # Runtime knobs. Secrets stay in .env. Env vars override this file.
 template:
   package: 66degrees-factory
-  version: "0.2.7"
+  version: "0.2.8"
 gateway:
   provider: litellm
   default_model: gemini/gemini-2.5-flash
@@ -16,4 +16,8 @@ observability:
 adk:
   enabled: false
 a2a:
+  enabled: false
+looker:
+  enabled: false
+bqml:
   enabled: false

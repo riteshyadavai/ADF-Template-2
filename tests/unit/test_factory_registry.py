@@ -18,6 +18,8 @@ def test_factory_registry_exposes_all_services():
     assert reg.eval().backend == "local"
     assert reg.mcp() is not None
     assert reg.secrets().get_secret("MISSING_FACTORY_SECRET") is None
+    assert reg.looker().enabled is False
+    assert reg.bqml().enabled is False
 
 
 def test_factory_registry_singleton():

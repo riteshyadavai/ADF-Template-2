@@ -51,6 +51,13 @@ class FactoryChoices(BaseModel):
 
     adk: bool = False
     a2a: bool = False
+    looker: bool = False
+    looker_base_url: str = ""
+    bqml: bool = False
+    bqml_project: str = ""
+    bqml_location: str = "US"
+    bqml_dataset: str = ""
+    bqml_model: str = ""
     mcp_examples: bool = False
 
     secrets_backend: str = "env"
@@ -78,11 +85,17 @@ class FactoryChoices(BaseModel):
             eval_backend=self.eval_backend,
             langfuse=self.langfuse,
             logfire=self.logfire,
+            looker=self.looker,
+            bqml=self.bqml,
         )
         if self.adk:
             hints.append("# then: uv run python examples/adk_smoke.py")
         if self.a2a:
             hints.append("# A2A: uv run python examples/a2a_client_smoke.py")
+        if self.looker:
+            hints.append("# Looker: uv run python examples/looker_smoke.py")
+        if self.bqml:
+            hints.append("# BQML: uv run python examples/bqml_smoke.py")
         return hints
 
     def render_env(self) -> str:
@@ -134,6 +147,23 @@ class FactoryChoices(BaseModel):
             f"A2A_ENABLED={str(self.a2a).lower()}",
             f"A2A_AGENT_NAME={self.slug}",
             "A2A_PEER_URL=http://127.0.0.1:8000",
+            "",
+            f"LOOKER_ENABLED={str(self.looker).lower()}",
+            f"LOOKER_BASE_URL={self.looker_base_url}",
+            "LOOKER_CLIENT_ID=CHANGE_ME",
+            "LOOKER_CLIENT_SECRET=CHANGE_ME",
+            f"LOOKERSDK_BASE_URL={self.looker_base_url}",
+            "LOOKERSDK_CLIENT_ID=CHANGE_ME",
+            "LOOKERSDK_CLIENT_SECRET=CHANGE_ME",
+            "LOOKERSDK_API_VERSION=4.0",
+            "LOOKERSDK_VERIFY_SSL=true",
+            "LOOKERSDK_TIMEOUT=120",
+            "",
+            f"BQML_ENABLED={str(self.bqml).lower()}",
+            f"BQML_PROJECT={self.bqml_project}",
+            f"BQML_LOCATION={self.bqml_location}",
+            f"BQML_DATASET={self.bqml_dataset}",
+            f"BQML_MODEL={self.bqml_model}",
             "",
             f"EVAL_BACKEND={self.eval_backend}",
             f"EVAL_THRESHOLD={self.eval_threshold}",
@@ -303,6 +333,17 @@ class FactoryChoices(BaseModel):
             },
             "adk": {"enabled": self.adk},
             "a2a": {"enabled": self.a2a},
+            "looker": {
+                "enabled": self.looker,
+                "base_url": self.looker_base_url,
+            },
+            "bqml": {
+                "enabled": self.bqml,
+                "project": self.bqml_project,
+                "location": self.bqml_location,
+                "dataset": self.bqml_dataset,
+                "model": self.bqml_model,
+            },
             "security": {
                 "secrets_backend": self.secrets_backend,
                 "content_guardrail_backend": self.guardrails,
@@ -346,6 +387,8 @@ def factory_choices_from_app_yaml(
     obs = raw.get("observability") or {}
     adk = raw.get("adk") or {}
     a2a = raw.get("a2a") or {}
+    looker = raw.get("looker") or {}
+    bqml = raw.get("bqml") or {}
     security = raw.get("security") or {}
     tenant = raw.get("tenant") or {}
     domain = str(project.get("domain") or "")
@@ -384,6 +427,13 @@ def factory_choices_from_app_yaml(
         db_cold_url=str(database.get("cold_url") or "sqlite+aiosqlite:///./data/cold_state.db"),
         adk=bool(adk.get("enabled", False)),
         a2a=bool(a2a.get("enabled", False)),
+        looker=bool(looker.get("enabled", False)),
+        looker_base_url=str(looker.get("base_url") or ""),
+        bqml=bool(bqml.get("enabled", False)),
+        bqml_project=str(bqml.get("project") or ""),
+        bqml_location=str(bqml.get("location") or "US"),
+        bqml_dataset=str(bqml.get("dataset") or ""),
+        bqml_model=str(bqml.get("model") or ""),
         secrets_backend=str(security.get("secrets_backend") or "env"),
         guardrails=str(security.get("content_guardrail_backend") or "passthrough"),
         tenant_isolation=str(tenant.get("isolation_mode") or "logical"),

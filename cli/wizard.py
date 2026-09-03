@@ -166,6 +166,20 @@ def _configure_backends(partial: FactoryChoices, *, full: bool, include_planned:
     eval_backend = _select_backend("eval", partial.eval_backend, include_planned=include_planned)
     langfuse = _confirm("Enable Langfuse", False)
     logfire = _confirm("Enable Logfire", partial.logfire)
+    looker = _confirm("Enable Looker", partial.looker)
+    looker_base_url = partial.looker_base_url
+    if looker:
+        looker_base_url = _text("Looker base URL", looker_base_url or "https://your.cloud.looker.com")
+    bqml = _confirm("Enable BigQuery ML", partial.bqml)
+    bqml_project = partial.bqml_project
+    bqml_location = partial.bqml_location
+    bqml_dataset = partial.bqml_dataset
+    bqml_model = partial.bqml_model
+    if bqml:
+        bqml_project = _text("BigQuery project", bqml_project)
+        bqml_location = _text("BigQuery location", bqml_location)
+        bqml_dataset = _text("BQML dataset", bqml_dataset)
+        bqml_model = _text("Default BQML model id", bqml_model)
     state_backend = _select_backend("state", partial.state_backend, include_planned=include_planned)
     adk = partial.adk
     a2a = partial.a2a
@@ -211,6 +225,13 @@ def _configure_backends(partial: FactoryChoices, *, full: bool, include_planned:
             "eval_backend": eval_backend,
             "langfuse": langfuse,
             "logfire": logfire,
+            "looker": looker,
+            "looker_base_url": looker_base_url,
+            "bqml": bqml,
+            "bqml_project": bqml_project,
+            "bqml_location": bqml_location,
+            "bqml_dataset": bqml_dataset,
+            "bqml_model": bqml_model,
             "state_backend": state_backend,
             "adk": adk,
             "a2a": a2a,

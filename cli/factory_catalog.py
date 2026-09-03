@@ -110,6 +110,8 @@ def extras_for_choices(
     eval_backend: str,
     langfuse: bool,
     logfire: bool,
+    looker: bool = False,
+    bqml: bool = False,
     root: Path | None = None,
 ) -> list[str]:
     hints = ["uv sync"]
@@ -133,6 +135,10 @@ def extras_for_choices(
         add("observability", "langfuse")
     if logfire:
         add("observability", "logfire")
+    if looker:
+        add("looker", "sdk")
+    if bqml:
+        add("bqml", "bigquery")
 
     for extra in sorted(extras):
         hints.append(f"uv sync --extra {extra}")

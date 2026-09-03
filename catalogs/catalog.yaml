@@ -1,4 +1,4 @@
-version: "0.2.7"
+version: "0.2.8"
 domains:
   bfs:
     name: Banking and Financial Services
@@ -618,3 +618,17 @@ factories:
           status: implemented
         - id: http
           status: implemented
+    - id: looker
+      prompt: Looker
+      setting: LOOKER_ENABLED
+      backends:
+        - id: sdk
+          status: implemented
+          extra: looker
+    - id: bqml
+      prompt: BigQuery ML
+      setting: BQML_ENABLED
+      backends:
+        - id: bigquery
+          status: implemented
+          extra: bqml

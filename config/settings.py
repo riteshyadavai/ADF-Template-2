@@ -154,6 +154,28 @@ class A2ASettings(BaseSettings):
     peer_url: str = "http://127.0.0.1:8000"
 
 
+class LookerSettings(BaseSettings):
+    model_config = SettingsConfigDict(env_prefix="LOOKER_")
+
+    enabled: bool = False
+    base_url: str = ""
+    client_id: SecretStr | None = None
+    client_secret: SecretStr | None = None
+    verify_ssl: bool = True
+    timeout: int = 120
+    api_version: str = "4.0"
+
+
+class BqmlSettings(BaseSettings):
+    model_config = SettingsConfigDict(env_prefix="BQML_")
+
+    enabled: bool = False
+    project: str = ""
+    location: str = "US"
+    dataset: str = ""
+    model: str = ""
+
+
 class EvalSettings(BaseSettings):
     model_config = SettingsConfigDict(env_prefix="EVAL_")
 
@@ -206,6 +228,8 @@ class Settings(BaseSettings):
     pdf: PdfSettings = Field(default_factory=PdfSettings)
     adk: AdkSettings = Field(default_factory=AdkSettings)
     a2a: A2ASettings = Field(default_factory=A2ASettings)
+    looker: LookerSettings = Field(default_factory=LookerSettings)
+    bqml: BqmlSettings = Field(default_factory=BqmlSettings)
     eval: EvalSettings = Field(default_factory=EvalSettings)
     security: SecuritySettings = Field(default_factory=SecuritySettings)
 
@@ -245,6 +269,10 @@ def _normalize_app_yaml(raw: dict[str, Any]) -> dict[str, Any]:
         out["adk"] = raw["adk"]
     if "a2a" in raw:
         out["a2a"] = raw["a2a"]
+    if "looker" in raw:
+        out["looker"] = raw["looker"]
+    if "bqml" in raw:
+        out["bqml"] = raw["bqml"]
     if "tenant" in raw:
         out["tenant"] = raw["tenant"]
     if "security" in raw:
@@ -301,6 +329,8 @@ _ENV_NESTED_PREFIXES = (
     ("pdf", "PDF_"),
     ("adk", "ADK_"),
     ("a2a", "A2A_"),
+    ("looker", "LOOKER_"),
+    ("bqml", "BQML_"),
     ("eval", "EVAL_"),
     ("security", "SECURITY_"),
     ("tenant", "TENANT_"),

@@ -1,6 +1,8 @@
 # Factories and extras
 
-Selection is **runtime** (`config/app.yaml` then env). `init` writes those values. Allowed backends live in `catalogs/catalog.yaml` (CLI only).
+Selection is **runtime** (`config/app.yaml` then env). `init` writes those values. Allowed backends live in `catalogs/catalog.yaml` (CLI only — the *menu*). Generated apps do **not** include `catalogs/` or an `sdk/` folder.
+
+`catalog.yaml` = what `init` can pick. `config/app.yaml` = this project's order. `.env` = secrets (wins over `app.yaml`).
 
 !!! note "Planned backends"
     Kong, pgvector, weaviate, vault, sops raise `NotImplementedError`. Do not ship silent memory fakes.

@@ -26,7 +26,7 @@
 
     ---
 
-    Env keys, extras, planned backends.
+    Env keys, extras, Looker / BQML / Asset Factory.
 
 -   :material-play-circle: [Run the app](guide/run.md)
 

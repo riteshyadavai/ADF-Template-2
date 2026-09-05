@@ -1,6 +1,6 @@
 # 66degrees Factory
 
-Package **`multi-agent-factory` 0.2.9**. Console command **`66degrees-factory`** (alias **`factory`**).
+Package **`multi-agent-factory` 0.2.10**. Console command **`66degrees-factory`** (alias **`factory`**).
 
 This repo is the **generator** and the default runtime template. `init` writes a **developer agent app** (one domain + one workflow). It does **not** copy `catalogs/` or `cli/` into that app.
 
@@ -75,6 +75,8 @@ Non-interactive:
 66degrees-factory list-workflows --domain bfs
 66degrees-factory list-factories
 66degrees-factory init --name demo --domain retail --workflow accr --yes --dry-run
+66degrees-factory init --name acme-app --output ~/Desktop/acme-app \
+  --domain other --workflow intake --custom-domain acme --assets --yes
 ```
 
 | Domain | Workflows |
@@ -92,17 +94,18 @@ Interactive `init` previews the catalog plan (agents + graph). Accept it, or cus
 |------------|---------|
 | `app/`, `agents/`, `factories/`, `config/`, `shared/` | Runtime |
 | `domains/<domain>/workflows/<workflow>/` | That workflow only |
-| `.env` | Secrets |
-| `config/app.yaml` | Domain, workflow, backends |
+| `.env` | Secrets (env wins over `app.yaml`) |
+| `config/app.yaml` | This project's order: domain, workflow, enabled factories |
 | `factory-choices.json` | Wizard record (`--from-choices`) |
 
-**Not copied:** `catalogs/`, `cli/`, site-packages (`aiohttp`, `*.dist-info`). Unused factory **backends** stay under `factories/` so env can switch later.
+**Not copied:** `catalogs/` (the *menu* for `init` only), `cli/`, site-packages. Do **not** add an `sdk/` checkout; Asset Factory installs via `uv sync --extra asset-factory`. Unused factory **backends** stay under `factories/` so env can switch later.
 
 Then:
 
 ```bash
 cd ~/Desktop/demo-afi
 uv sync
+# after --assets: uv sync --extra asset-factory  (needs GitHub access to 66degrees/agentic-asset-factory)
 # set GOOGLE_API_KEY and other CHANGE_ME keys in .env
 make dev    # http://localhost:8000/api/v1/docs
 ```
@@ -214,6 +217,7 @@ from factories.registry import get_factory_registry
 reg = get_factory_registry()
 cache = reg.cache()
 gateway = reg.ai_gateway()
+assets = reg.assets()  # enterprise-agent-sdk when ASSETS_ENABLED=true
 ```
 
 | Capability | Implemented | Env |
@@ -228,6 +232,9 @@ gateway = reg.ai_gateway()
 | State | memory, sqlite | `DB_BACKEND` |
 | Observability | Langfuse, Logfire | `LANGFUSE_*`, `LOGFIRE_*` |
 | ADK / A2A | in-memory / SDK mount | `ADK_ENABLED`, `A2A_ENABLED` |
+| Looker | `looker-sdk` init40 | `LOOKER_ENABLED` |
+| BQML | BigQuery `ML.PREDICT` | `BQML_ENABLED` |
+| Assets | enterprise-agent-sdk (SQL, OpenAPI, HITL, PII, local crawl, memory sync) | `ASSETS_ENABLED` |
 
 Kong, pgvector, weaviate, vault, sops are planned (`NotImplementedError`).
 
@@ -260,4 +267,4 @@ make docs-deploy   # Cloud Run adf-factory-docs (ai-ml-team-sandbox only)
 - [Run](docs/guide/run.md)
 - [Publish the package](docs/guide/publish-gcp.md)
 
-New CLI versions update **new** `init` snapshots (`template.version` in `config/app.yaml`). Existing apps keep the factories they were generated with. Pin `multi-agent-factory==0.2.9` in a team runbook.
+New CLI versions update **new** `init` snapshots (`template.version` in `config/app.yaml`). Existing apps keep the factories they were generated with. Pin `multi-agent-factory==0.2.10` in a team runbook.

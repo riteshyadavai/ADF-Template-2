@@ -42,6 +42,8 @@ Runtime app snapshot (`app/`, `agents/`, `factories/`, `tests/`, `docs/`). **Not
 
 `--yes` accepts the catalog plan and `recommended_stack` unless you pass factory flags. Looker, BQML, and Asset Factory stay off unless you pass `--looker` / `--bqml` / `--assets`.
 
+Asset Factory does **not** copy GitHub into the project. After `--assets`, run `uv sync --extra asset-factory` (needs access to `66degrees/agentic-asset-factory`). Then set `ASSETS_SQL_DB_URL` (and other `ASSETS_*` you use). Smoke: `uv run python examples/assets_smoke.py`.
+
 `Platform` loads that workflow when `config/app.yaml` has `project.domain` and `project.workflow`. This checkout without a project block uses the default `respond` graph.
 
 ## After generate

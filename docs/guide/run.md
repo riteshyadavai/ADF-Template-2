@@ -51,6 +51,9 @@ uv run python examples/single_agent.py
 uv run python examples/multi_agent.py
 uv run python examples/adk_smoke.py
 uv run python examples/a2a_client_smoke.py
+uv run python examples/looker_smoke.py
+uv run python examples/bqml_smoke.py
+uv run python examples/assets_smoke.py   # ASSETS_ENABLED=true + --extra asset-factory
 ```
 
 ## Tests

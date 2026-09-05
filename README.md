@@ -1,12 +1,14 @@
 # 66degrees Factory
 
-Package **`multi-agent-factory` 0.2.11**. Console command **`66degrees-factory`** (alias **`factory`**).
+Package **`multi-agent-factory` 0.2.12**. Console command **`66degrees-factory`** (alias **`factory`**).
 
 This repo is the **generator** and the default runtime template. `init` writes a **developer agent app** (one domain + one workflow). It does **not** copy `catalogs/` or `cli/` into that app.
 
 **Requires:** Python 3.11+, [uv](https://docs.astral.sh/uv/)
 
 **Docs:** [https://adf-factory-docs-741027775203.us-central1.run.app](https://adf-factory-docs-741027775203.us-central1.run.app)
+
+![66degrees Factory + Asset Factory architecture](docs/img/architecture.png)
 
 ---
 
@@ -267,4 +269,4 @@ make docs-deploy   # Cloud Run adf-factory-docs (ai-ml-team-sandbox only)
 - [Run](docs/guide/run.md)
 - [Publish the package](docs/guide/publish-gcp.md)
 
-New CLI versions update **new** `init` snapshots (`template.version` in `config/app.yaml`). Existing apps keep the factories they were generated with. Pin `multi-agent-factory==0.2.11` in a team runbook.
+New CLI versions update **new** `init` snapshots (`template.version` in `config/app.yaml`). Existing apps keep the factories they were generated with. Pin `multi-agent-factory==0.2.12` in a team runbook.

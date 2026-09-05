@@ -2,6 +2,8 @@
 
 `66degrees-factory` generates **one project** per domain + workflow. The same package is the runtime template.
 
+![66degrees Factory + Asset Factory architecture](img/architecture.png)
+
 <div class="grid cards" markdown>
 
 -   :material-download: [Install the CLI](guide/install.md)

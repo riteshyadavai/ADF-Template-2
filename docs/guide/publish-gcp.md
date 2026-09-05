@@ -11,7 +11,7 @@ The **CLI package** lives in Artifact Registry. This documentation site is a dif
 | Format | Python |
 | Location | `us-central1` |
 | Package | `multi-agent-factory` |
-| Version | `0.2.11` |
+| Version | `0.2.12` |
 | Upload URL | `https://us-central1-python.pkg.dev/ai-ml-team-sandbox/adf-factory-pypi/` |
 | Install index | `https://us-central1-python.pkg.dev/ai-ml-team-sandbox/adf-factory-pypi/simple/` |
 
@@ -52,7 +52,7 @@ uv build --wheel
 uvx --with keyrings.google-artifactregistry-auth --with twine \
   twine upload --non-interactive \
   --repository-url https://us-central1-python.pkg.dev/ai-ml-team-sandbox/adf-factory-pypi/ \
-  dist/multi_agent_factory-0.2.11-py3-none-any.whl
+  dist/multi_agent_factory-0.2.12-py3-none-any.whl
 ```
 
 Verify:

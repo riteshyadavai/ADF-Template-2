@@ -3124,7 +3124,7 @@ wheels = [
 
 [[package]]
 name = "multi-agent-factory"
-version = "0.2.11"
+version = "0.2.12"
 source = { editable = "." }
 dependencies = [
     { name = "a2a-sdk", extra = ["http-server"] },

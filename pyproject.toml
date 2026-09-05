@@ -1,6 +1,6 @@
 [project]
 name = "multi-agent-factory"
-version = "0.2.10"
+version = "0.2.11"
 description = "Production-ready reusable multi-agent project factory with shared infrastructure, security, and observability."
 readme = "README.md"
 requires-python = ">=3.11"

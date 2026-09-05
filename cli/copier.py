@@ -123,6 +123,12 @@ def render_project_files(dest: Path, choices: FactoryChoices) -> None:
             "",
             1,
         )
+        text = text.replace(
+            'packages = ["agents", "app", "shared", "factories", "config", "cli"]',
+            'packages = ["agents", "app", "shared", "factories", "config"]',
+            1,
+        )
+        text = text.replace('"catalogs" = "catalogs"\n', "")
         pyproject.write_text(text, encoding="utf-8")
 
     (dest / "README.md").write_text(choices.render_readme(), encoding="utf-8")

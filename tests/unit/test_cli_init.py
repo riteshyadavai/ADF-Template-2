@@ -101,6 +101,8 @@ def test_init_yes_copies_full_tree_and_one_workflow(tmp_path: Path):
     pyproject = (dest / "pyproject.toml").read_text(encoding="utf-8")
     assert 'name = "hcls-epa"' in pyproject
     assert "66degrees-factory" not in pyproject
+    assert '"catalogs" = "catalogs"' not in pyproject
+    assert 'packages = ["agents", "app", "shared", "factories", "config"]' in pyproject
 
 
 def test_list_domains():

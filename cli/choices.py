@@ -58,6 +58,7 @@ class FactoryChoices(BaseModel):
     bqml_location: str = "US"
     bqml_dataset: str = ""
     bqml_model: str = ""
+    assets: bool = False
     mcp_examples: bool = False
 
     secrets_backend: str = "env"
@@ -87,6 +88,7 @@ class FactoryChoices(BaseModel):
             logfire=self.logfire,
             looker=self.looker,
             bqml=self.bqml,
+            assets=self.assets,
         )
         if self.adk:
             hints.append("# then: uv run python examples/adk_smoke.py")
@@ -96,6 +98,8 @@ class FactoryChoices(BaseModel):
             hints.append("# Looker: uv run python examples/looker_smoke.py")
         if self.bqml:
             hints.append("# BQML: uv run python examples/bqml_smoke.py")
+        if self.assets:
+            hints.append("# Assets: uv run python examples/assets_smoke.py")
         return hints
 
     def render_env(self) -> str:
@@ -164,6 +168,23 @@ class FactoryChoices(BaseModel):
             f"BQML_LOCATION={self.bqml_location}",
             f"BQML_DATASET={self.bqml_dataset}",
             f"BQML_MODEL={self.bqml_model}",
+            "",
+            f"ASSETS_ENABLED={str(self.assets).lower()}",
+            "ASSETS_SQL_DB_URL=CHANGE_ME",
+            "ASSETS_SQL_READ_ONLY=true",
+            "ASSETS_SQL_MAX_ROWS=200",
+            "ASSETS_SQL_ALLOWED_TABLES=",
+            "ASSETS_OPENAPI_BASE_URL=",
+            "ASSETS_OPENAPI_SPEC_URL=",
+            "ASSETS_OPENAPI_AUTH_HEADER=CHANGE_ME",
+            "ASSETS_HITL_WEBHOOK_URL=",
+            "ASSETS_HITL_TIMEOUT_SECONDS=3600",
+            "ASSETS_PII_BLOCK_ON_TOXICITY=true",
+            "ASSETS_CRAWLER_SOURCE_TYPE=local",
+            "ASSETS_CRAWLER_ALLOWED_FOLDERS=",
+            "ASSETS_VECTOR_PROVIDER=memory",
+            "ASSETS_VECTOR_CHUNK_SIZE=500",
+            "ASSETS_VECTOR_CHUNK_OVERLAP=50",
             "",
             f"EVAL_BACKEND={self.eval_backend}",
             f"EVAL_THRESHOLD={self.eval_threshold}",
@@ -344,6 +365,7 @@ class FactoryChoices(BaseModel):
                 "dataset": self.bqml_dataset,
                 "model": self.bqml_model,
             },
+            "assets": {"enabled": self.assets},
             "security": {
                 "secrets_backend": self.secrets_backend,
                 "content_guardrail_backend": self.guardrails,
@@ -389,6 +411,7 @@ def factory_choices_from_app_yaml(
     a2a = raw.get("a2a") or {}
     looker = raw.get("looker") or {}
     bqml = raw.get("bqml") or {}
+    assets = raw.get("assets") or {}
     security = raw.get("security") or {}
     tenant = raw.get("tenant") or {}
     domain = str(project.get("domain") or "")
@@ -434,6 +457,7 @@ def factory_choices_from_app_yaml(
         bqml_location=str(bqml.get("location") or "US"),
         bqml_dataset=str(bqml.get("dataset") or ""),
         bqml_model=str(bqml.get("model") or ""),
+        assets=bool(assets.get("enabled", False)),
         secrets_backend=str(security.get("secrets_backend") or "env"),
         guardrails=str(security.get("content_guardrail_backend") or "passthrough"),
         tenant_isolation=str(tenant.get("isolation_mode") or "logical"),

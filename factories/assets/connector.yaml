@@ -1,0 +1,8 @@
+status: implemented
+env:
+  - ASSETS_ENABLED
+  - ASSETS_SQL_DB_URL
+  - ASSETS_OPENAPI_BASE_URL
+  - ASSETS_HITL_WEBHOOK_URL
+example: uv run python examples/assets_smoke.py
+extra: asset-factory

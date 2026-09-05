@@ -21,5 +21,6 @@ eval_client = reg.eval()
 DeepEval: `uv sync --group eval` then `EVAL_BACKEND=deepeval`.
 Qdrant: `uv sync --extra qdrant`. Memcached: `uv sync --extra cache-memcached`.
 Looker: `uv sync --extra looker`. BQML: `uv sync --extra bqml`.
+Asset Factory: `uv sync --extra asset-factory` (GitHub `66degrees/agentic-asset-factory`).
 
 Wire agents through `app.platform.Platform`, not by constructing SDKs in `agents/`.

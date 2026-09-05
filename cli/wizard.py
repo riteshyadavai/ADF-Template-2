@@ -166,6 +166,7 @@ def _configure_backends(partial: FactoryChoices, *, full: bool, include_planned:
     eval_backend = _select_backend("eval", partial.eval_backend, include_planned=include_planned)
     langfuse = _confirm("Enable Langfuse", False)
     logfire = _confirm("Enable Logfire", partial.logfire)
+    enterprise_assets = _confirm("Enable Enterprise Asset Factory", partial.assets)
     looker = _confirm("Enable Looker", partial.looker)
     looker_base_url = partial.looker_base_url
     if looker:
@@ -225,6 +226,7 @@ def _configure_backends(partial: FactoryChoices, *, full: bool, include_planned:
             "eval_backend": eval_backend,
             "langfuse": langfuse,
             "logfire": logfire,
+            "assets": enterprise_assets,
             "looker": looker,
             "looker_base_url": looker_base_url,
             "bqml": bqml,

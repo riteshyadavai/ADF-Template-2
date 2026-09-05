@@ -78,7 +78,7 @@ Print capabilities and backends from `catalogs/catalog.yaml` (`implemented` / `p
 
 | Flag | Required | Description |
 |------|----------|-------------|
-| `--capability` | no | Filter: `gateway`, `cache`, `vector`, `embeddings`, `parser`, `guardrails`, `eval`, `state`, `secrets`, `observability`, `adk`, `a2a`, `mcp`, `looker`, `bqml` |
+| `--capability` | no | Filter: `gateway`, `cache`, `vector`, `embeddings`, `parser`, `guardrails`, `eval`, `state`, `secrets`, `observability`, `adk`, `a2a`, `mcp`, `looker`, `bqml`, `assets` |
 
 ---
 
@@ -163,6 +163,7 @@ Optional `--name` / `--output` override the JSON.
 | `--a2a` / `--no-a2a` | off | `A2A_ENABLED` |
 | `--looker` / `--no-looker` | off | `LOOKER_ENABLED` |
 | `--bqml` / `--no-bqml` | off | `BQML_ENABLED` |
+| `--assets` / `--no-assets` | off | `ASSETS_ENABLED` (enterprise-agent-sdk) |
 | `--mcp-examples` / `--no-mcp-examples` | off | writes `mcp.yaml` under the workflow |
 | `--secrets-backend` | `env` | `env` \| `vault` \| `aws_secrets_manager` \| `sops` |
 | `--environment` | `local` | `local` \| `dev` \| `test` \| `uat` \| `production` |

@@ -1,4 +1,4 @@
-version: "0.2.8"
+version: "0.2.9"
 domains:
   bfs:
     name: Banking and Financial Services
@@ -632,3 +632,10 @@ factories:
         - id: bigquery
           status: implemented
           extra: bqml
+    - id: assets
+      prompt: Enterprise Asset Factory
+      setting: ASSETS_ENABLED
+      backends:
+        - id: enterprise_sdk
+          status: implemented
+          extra: asset-factory

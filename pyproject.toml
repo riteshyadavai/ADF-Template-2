@@ -1,6 +1,6 @@
 [project]
 name = "multi-agent-factory"
-version = "0.2.8"
+version = "0.2.9"
 description = "Production-ready reusable multi-agent project factory with shared infrastructure, security, and observability."
 readme = "README.md"
 requires-python = ">=3.11"
@@ -80,6 +80,9 @@ looker = [
 bqml = [
     "google-cloud-bigquery>=3.25.0",
 ]
+asset-factory = [
+    "enterprise-agent-sdk @ git+https://github.com/66degrees/agentic-asset-factory.git",
+]
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
@@ -114,6 +117,9 @@ package = true
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
+
+[tool.hatch.metadata]
+allow-direct-references = true
 
 [tool.hatch.build.targets.wheel]
 packages = ["agents", "app", "shared", "factories", "config", "cli"]

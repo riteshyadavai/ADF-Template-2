@@ -55,6 +55,7 @@ def _print_summary(choices: FactoryChoices) -> None:
         ("A2A", str(choices.a2a)),
         ("Looker", str(choices.looker)),
         ("BQML", str(choices.bqml)),
+        ("Assets", str(choices.assets)),
         ("Plan", choices.plan_mode),
         ("Environment", choices.environment),
         ("Template", f"{choices.template_package} {choices.template_version}"),
@@ -136,6 +137,7 @@ def init(
     a2a: Annotated[bool | None, typer.Option("--a2a/--no-a2a")] = None,
     looker: Annotated[bool | None, typer.Option("--looker/--no-looker")] = None,
     bqml: Annotated[bool | None, typer.Option("--bqml/--no-bqml")] = None,
+    assets: Annotated[bool | None, typer.Option("--assets/--no-assets")] = None,
     mcp_examples: Annotated[
         bool | None,
         typer.Option("--mcp-examples/--no-mcp-examples"),
@@ -198,6 +200,7 @@ def init(
         a2a=False if a2a is None else a2a,
         looker=False if looker is None else looker,
         bqml=False if bqml is None else bqml,
+        assets=False if assets is None else assets,
         mcp_examples=False if mcp_examples is None else mcp_examples,
         secrets_backend=secrets_backend or "env",
         environment=environment or "local",

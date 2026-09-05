@@ -16,6 +16,9 @@ venv/
 # OS / editor
 .DS_Store
 
+# Local copy of 66degrees/agentic-asset-factory (do not ship)
+sdk/
+
 # Factory runtime artifacts
 data/
 dist/

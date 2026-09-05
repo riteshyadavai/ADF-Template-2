@@ -133,6 +133,7 @@ def test_list_factories():
     assert "qdrant" in result.output
     assert "looker" in result.output
     assert "bqml" in result.output
+    assert "assets" in result.output
 
 
 def test_init_yes_looker_bqml(tmp_path: Path):
@@ -188,6 +189,36 @@ def test_init_yes_default_looker_bqml_off(tmp_path: Path):
     env = (dest / ".env").read_text(encoding="utf-8")
     assert "LOOKER_ENABLED=false" in env
     assert "BQML_ENABLED=false" in env
+    assert "ASSETS_ENABLED=false" in env
+
+
+def test_init_yes_assets(tmp_path: Path):
+    dest = tmp_path / "demo-assets"
+    result = runner.invoke(
+        app,
+        [
+            "init",
+            "--name",
+            "demo-assets",
+            "--output",
+            str(dest),
+            "--domain",
+            "other",
+            "--workflow",
+            "intake",
+            "--custom-domain",
+            "acme",
+            "--assets",
+            "--yes",
+        ],
+    )
+    assert result.exit_code == 0, result.output
+    env = (dest / ".env").read_text(encoding="utf-8")
+    assert "ASSETS_ENABLED=true" in env
+    assert "ASSETS_SQL_DB_URL=CHANGE_ME" in env
+    app_yaml = (dest / "config" / "app.yaml").read_text(encoding="utf-8")
+    assert "assets:" in app_yaml
+    assert "asset-factory" in result.output
 
 
 def test_init_dry_run_qdrant_env(tmp_path: Path):

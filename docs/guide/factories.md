@@ -32,6 +32,7 @@ gateway = reg.ai_gateway()
 | MCP | `mcp.yaml` | stdio, HTTP | — | `--mcp-examples` on init |
 | Looker | `LOOKER_ENABLED` | `sdk` (`looker-sdk` init40) | — | `--extra looker` |
 | BQML | `BQML_ENABLED` | `bigquery` | — | `--extra bqml` |
+| Assets | `ASSETS_ENABLED` | `enterprise_sdk` | — | `--extra asset-factory` (private GitHub) |
 
 ## Install extras after generate
 
@@ -45,6 +46,7 @@ uv sync --extra qdrant
 uv sync --extra cache-memcached
 uv sync --extra looker
 uv sync --extra bqml
+uv sync --extra asset-factory
 uv sync --group eval
 uv sync --group observability
 ```
@@ -82,7 +84,14 @@ BQML_PROJECT=my-gcp-project
 BQML_LOCATION=US
 BQML_DATASET=sites
 BQML_MODEL=site_score
+
+ASSETS_ENABLED=true
+ASSETS_SQL_DB_URL=sqlite:///./data/app.db
+ASSETS_SQL_READ_ONLY=true
+ASSETS_SQL_MAX_ROWS=200
 ```
+
+`uv sync --extra asset-factory` clones `enterprise-agent-sdk` from `github.com/66degrees/agentic-asset-factory` (needs GitHub access). Crawler is `local` (or `s3` with keys). Vector sync is `memory` only.
 
 ## Add a backend
 
@@ -115,4 +124,9 @@ uv run python examples/looker_smoke.py
 export BQML_ENABLED=true
 uv sync --extra bqml
 uv run python examples/bqml_smoke.py
+
+# Enterprise Asset Factory
+export ASSETS_ENABLED=true
+uv sync --extra asset-factory
+uv run python examples/assets_smoke.py
 ```

@@ -7,7 +7,7 @@ from pathlib import Path
 from typing import Any
 
 import yaml
-from pydantic import Field, SecretStr
+from pydantic import Field, SecretStr, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
@@ -176,6 +176,52 @@ class BqmlSettings(BaseSettings):
     model: str = ""
 
 
+def _split_csv(value: object) -> list[str]:
+    if value is None or value == "":
+        return []
+    if isinstance(value, list):
+        return [str(item).strip() for item in value if str(item).strip()]
+    return [part.strip() for part in str(value).split(",") if part.strip()]
+
+
+class AssetsSettings(BaseSettings):
+    model_config = SettingsConfigDict(env_prefix="ASSETS_")
+
+    enabled: bool = False
+    sql_db_url: SecretStr | None = None
+    sql_read_only: bool = True
+    sql_max_rows: int = 200
+    sql_allowed_tables: list[str] = Field(default_factory=list)
+    openapi_base_url: str = ""
+    openapi_spec_url: str = ""
+    openapi_auth_header: SecretStr | None = None
+    openapi_max_retries: int = 3
+    hitl_webhook_url: str = ""
+    hitl_timeout_seconds: int = 3600
+    hitl_required_approvers: int = 1
+    pii_block_on_toxicity: bool = True
+    pii_toxicity_keywords: list[str] = Field(default_factory=list)
+    crawler_source_type: str = "local"
+    crawler_allowed_folders: list[str] = Field(default_factory=list)
+    crawler_file_extensions: list[str] = Field(default_factory=lambda: [".txt", ".md"])
+    crawler_s3_access_key: SecretStr | None = None
+    crawler_s3_secret_key: SecretStr | None = None
+    vector_provider: str = "memory"
+    vector_chunk_size: int = 500
+    vector_chunk_overlap: int = 50
+
+    @field_validator(
+        "sql_allowed_tables",
+        "pii_toxicity_keywords",
+        "crawler_allowed_folders",
+        "crawler_file_extensions",
+        mode="before",
+    )
+    @classmethod
+    def _csv_lists(cls, value: object) -> list[str]:
+        return _split_csv(value)
+
+
 class EvalSettings(BaseSettings):
     model_config = SettingsConfigDict(env_prefix="EVAL_")
 
@@ -230,6 +276,7 @@ class Settings(BaseSettings):
     a2a: A2ASettings = Field(default_factory=A2ASettings)
     looker: LookerSettings = Field(default_factory=LookerSettings)
     bqml: BqmlSettings = Field(default_factory=BqmlSettings)
+    assets: AssetsSettings = Field(default_factory=AssetsSettings)
     eval: EvalSettings = Field(default_factory=EvalSettings)
     security: SecuritySettings = Field(default_factory=SecuritySettings)
 
@@ -273,6 +320,8 @@ def _normalize_app_yaml(raw: dict[str, Any]) -> dict[str, Any]:
         out["looker"] = raw["looker"]
     if "bqml" in raw:
         out["bqml"] = raw["bqml"]
+    if "assets" in raw:
+        out["assets"] = raw["assets"]
     if "tenant" in raw:
         out["tenant"] = raw["tenant"]
     if "security" in raw:
@@ -331,6 +380,7 @@ _ENV_NESTED_PREFIXES = (
     ("a2a", "A2A_"),
     ("looker", "LOOKER_"),
     ("bqml", "BQML_"),
+    ("assets", "ASSETS_"),
     ("eval", "EVAL_"),
     ("security", "SECURITY_"),
     ("tenant", "TENANT_"),

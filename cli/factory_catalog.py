@@ -112,6 +112,7 @@ def extras_for_choices(
     logfire: bool,
     looker: bool = False,
     bqml: bool = False,
+    assets: bool = False,
     root: Path | None = None,
 ) -> list[str]:
     hints = ["uv sync"]
@@ -139,6 +140,8 @@ def extras_for_choices(
         add("looker", "sdk")
     if bqml:
         add("bqml", "bigquery")
+    if assets:
+        add("assets", "enterprise_sdk")
 
     for extra in sorted(extras):
         hints.append(f"uv sync --extra {extra}")

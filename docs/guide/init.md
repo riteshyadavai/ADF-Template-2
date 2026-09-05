@@ -40,7 +40,7 @@ Runtime app snapshot (`app/`, `agents/`, `factories/`, `tests/`, `docs/`). **Not
 | `factory-choices.json` | Replay (`--from-choices`) |
 | `domains/<domain>/workflows/<workflow>/` | Manifests, prompts, `graph.yaml` |
 
-`--yes` accepts the catalog plan and `recommended_stack` unless you pass factory flags. Looker and BQML stay off unless you pass `--looker` / `--bqml`.
+`--yes` accepts the catalog plan and `recommended_stack` unless you pass factory flags. Looker, BQML, and Asset Factory stay off unless you pass `--looker` / `--bqml` / `--assets`.
 
 `Platform` loads that workflow when `config/app.yaml` has `project.domain` and `project.workflow`. This checkout without a project block uses the default `respond` graph.
 

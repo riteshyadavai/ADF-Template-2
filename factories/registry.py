@@ -14,12 +14,14 @@ from config.settings import Settings, get_settings
 from factories.a2a.factory import make_a2a_server
 from factories.a2a.protocol import A2AServerBundle
 from factories.adk.app import make_adk_app
-from factories.bqml.factory import make_bqml_client
-from factories.bqml.protocol import BqmlClient
 from factories.adk.factory import make_adk_runner
 from factories.adk.protocol import ADKRunner
 from factories.ai_gateway.litellm.factory import make_ai_gateway
 from factories.ai_gateway.protocol import LLMGateway
+from factories.assets.factory import make_asset_bundle
+from factories.assets.protocol import AssetBundle
+from factories.bqml.factory import make_bqml_client
+from factories.bqml.protocol import BqmlClient
 from factories.cache.factory import make_cache_provider
 from factories.cache.protocol import CacheProvider
 from factories.database.factory import make_cold_state_store, make_hot_state_store
@@ -128,6 +130,9 @@ class FactoryRegistry:
 
     def bqml(self) -> BqmlClient:
         return make_bqml_client(self.settings)
+
+    def assets(self) -> AssetBundle:
+        return make_asset_bundle(self.settings)
 
 
 @lru_cache
